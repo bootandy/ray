@@ -63,6 +63,7 @@ impl Material for Metal {
 }
 
 // Glass / Water etc:
+// Doesn't work right:
 pub struct Dielectric {
     pub ref_idx: f32,
 }

@@ -3,16 +3,16 @@ use super::vec::Point;
 use super::ray::Ray;
 use super::materials::Material;
 
-pub struct Sphere<'a> {
+pub struct Sphere {
     pub center: Point,
     pub radius: f32,
-    pub material: &'a Material,
+    pub material: Box<Material>,
 }
 
 // should be an iface:
 //    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32, rec: &HItRecord) -> bool{
 
-impl<'a> Sphere<'a> {
+impl Sphere {
     pub fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitableRecord> {
         let oc = r.origin.sub(&self.center);
         let a = r.direction.dot(&r.direction);
@@ -25,14 +25,14 @@ impl<'a> Sphere<'a> {
             if temp < t_max && temp > t_min {
                 let p = r.point_at_parameter(temp);
                 let normal = (p.sub(&self.center)).flat_div(self.radius);
-                return Some(HitableRecord{t:temp, p:p, normal:normal, material:self.material});
+                return Some(HitableRecord{t:temp, p:p, normal:normal, material:&self.material});
             }
             let temp = (-b + discriminant.sqrt()) / a;
             // dup code
             if temp < t_max && temp > t_min {
                 let p = r.point_at_parameter(temp);
                 let normal = (p.sub(&self.center)).flat_div(self.radius);
-                return Some(HitableRecord{t:temp, p:p, normal:normal, material:self.material});
+                return Some(HitableRecord{t:temp, p:p, normal:normal, material:&self.material});
             }
         }
         return None
@@ -40,11 +40,11 @@ impl<'a> Sphere<'a> {
 }
 
 // add hitable iface
-pub struct SphereList<'a> {
-    pub spheres : Vec<&'a Sphere<'a>>
+pub struct SphereList {
+    pub spheres : Vec<Sphere>
 }
 
-impl<'a> SphereList<'a> {
+impl SphereList {
     pub fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitableRecord> {
         let mut closest = t_max;
         let mut temp_rec = None;
@@ -66,5 +66,5 @@ pub struct HitableRecord<'a> {
     pub t: f32,
     pub p: Point,
     pub normal: Point,
-    pub material: &'a Material,
+    pub material: &'a Box<Material>,
 }
