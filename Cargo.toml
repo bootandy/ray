@@ -1,9 +1,8 @@
 [package]
-name = "ray"
+name = "ray2"
 version = "0.1.0"
 authors = ["bootandy <bootandy@gmail.com>"]
-edition = "2018"
 
 [dependencies]
-
-rand = "0.5.3"
+derive_more = "0.13.0"
+rand = "0.5.5"
