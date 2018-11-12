@@ -9,8 +9,6 @@ pub struct Sphere {
     pub material: Box<Material>,
 }
 
-// should be an iface:
-//    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32, rec: &HItRecord) -> bool{
 
 impl Sphere {
     pub fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitableRecord> {

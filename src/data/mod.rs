@@ -1,5 +1,4 @@
-
-pub mod vec;
+pub mod vec3;
 pub mod ray;
-pub mod shapes;
-pub mod materials;
+pub mod sphere;
+pub mod material;
