@@ -1,21 +1,5 @@
 use std::ops;
 
-trait Ops {
-}
-
-impl ops::Add<f32> for Color {
-    type Output = Color ;
-    fn add(self, rhs: f32) -> Color {
-        Color{r:self.r+rhs, g:self.g+rhs, b:self.b+rhs}
-    }
-}
-
-impl ops::Add<f32> for Point {
-    type Output = Point;
-    fn add(self, rhs: f32) -> Point {
-        Point{x:self.x+rhs, y:self.y+rhs, z:self.z+rhs}
-    }
-}
 
 #[derive(Debug, Clone, Copy, From, Add, AddAssign, Sub, Mul, Div)]
 pub struct Point {
