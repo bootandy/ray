@@ -3,18 +3,20 @@ use std::io::prelude::*;
 use std::f32;
 use std::f32::consts::PI;
 use rand::random;
+use rayon::prelude::*;
 
-use self::data::vec3::*;
-use self::data::material::*;
-use self::data::sphere::*;
-use self::data::ray::Ray;
-
+use data::vec3::*;
+use data::material::*;
+use data::sphere::*;
+use data::ray::Ray;
 
 pub mod data;
+
 
 #[macro_use]
 extern crate derive_more;
 extern crate rand;
+extern crate rayon;
 
 static mut counter: u64 = 0;
 
@@ -103,11 +105,11 @@ fn get_camera(look_from : Point, look_at : Point, up: Point, vfov: f32, aspect :
 
 fn get_old_spheres() -> SphereList {
     return SphereList{spheres: vec![
-        Sphere{center:Point{x:0.0, y:0.0, z:-1.0}, radius:0.5, material:Material::Lambertian(Lambertian{albedo:Color{r:0.1, g:0.2, b:0.5}})},
-        Sphere{center:Point{x:0.0, y:-100.5, z:-1.0}, radius:100.0, material:Material::Lambertian(Lambertian{albedo:Color{r:0.8, g:0.8, b:0.0}})},
-        Sphere{center:Point{x:1.0, y:0.0, z:-1.0}, radius:0.5, material:Material::Metal(Metal{albedo:Color{r:0.8, g:0.6, b:0.2}})},
-        Sphere{center:Point{x:-1.0, y:0.0, z:-1.0}, radius:0.5, material:Material::Dielectric(Dielectric{reflective_index:1.5})},
-        Sphere{center:Point{x:-1.0, y:0.0, z:-1.0}, radius:-0.45, material:Material::Dielectric(Dielectric{reflective_index:1.5})},
+        Sphere{center:Point{x:3.0, y:0.0, z:0.5}, radius:0.5, material:Material::Lambertian(Lambertian{albedo:Color{r:0.1, g:0.2, b:0.5}})},
+        Sphere{center:Point{x:0.0, y:-100.5, z:0.0}, radius:100.0, material:Material::Lambertian(Lambertian{albedo:Color{r:0.8, g:0.8, b:0.0}})},
+        Sphere{center:Point{x:2.0, y:0.0, z:-0.5}, radius:0.5, material:Material::Metal(Metal{albedo:Color{r:0.8, g:0.6, b:0.2}})},
+        Sphere{center:Point{x:1.0, y:0.0, z:1.0}, radius:0.5, material:Material::Dielectric(Dielectric{reflective_index:1.5})},
+        Sphere{center:Point{x:1.0, y:0.0, z:1.0}, radius:-0.45, material:Material::Dielectric(Dielectric{reflective_index:1.5})},
     ]};
 }
 
@@ -140,12 +142,29 @@ fn get_spheres_many() -> SphereList {
     return SphereList{spheres:v}
 }
 
+fn calc_pixel(data : &(i32, i32, &Camera, &SphereList)) -> Color {
+    let i = data.0;
+    let j = data.1;
+    let cam = data.2;
+    let spheres = data.3;
+    let mut col = Color{r:0.0, g:0.0, b:0.0};
+
+    for _s in 0..ns {
+        let u = (i as f32 + random::<f32>()) / nx as f32;
+        let v = (j as f32 + random::<f32>()) / ny as f32;
+
+        let ray = cam.get_ray(u, v);
+        col += color(&ray, &spheres, 0);
+    }
+    col / ns as f32
+}
+
+const nx : i32 = 1200;
+const ny : i32 = 800;
+const ns : i32 = 100;
 
 fn main() -> std::io::Result<()> {
     println!("Hello, world!");
-    let nx = 200;
-    let ny = 100;
-    let ns = 100;
     let mut buffer = File::create("out.ppm")?;
     buffer.write(format!("P3\n{} {}\n255\n", nx, ny).as_bytes())?;
 
@@ -153,26 +172,24 @@ fn main() -> std::io::Result<()> {
         Point{x:13.0, y: 2.0, z: 3.0},
         Point{x:0.0, y: 0.5, z: 0.0},
         Point{x:0.0, y: 1.0, z: 0.0},
-        15.0,
+        10.0,
         nx as f32 / ny as f32,
         0.01,
     );
-    //let spheres = get_spheres_many();
-    let spheres = get_old_spheres();
+    let spheres = get_spheres_many();
+    //let spheres = get_old_spheres();
+
+    let mut to_calc = vec![];
 
     for j in (0..ny-1).rev() {
         for i in 0..nx {
-            let mut col = Color{r:0.0, g:0.0, b:0.0};
-            for _s in 0..ns {
-                let u = (i as f32 + random::<f32>()) / nx as f32;
-                let v = (j as f32 + random::<f32>()) / ny as f32;
-
-                let ray = cam.get_ray(u, v);
-                col += color(&ray, &spheres, 0);
-            }
-            col = col / ns as f32;
-            buffer.write(col.as_color_str().as_bytes())?;
+            to_calc.push((i, j, &cam, &spheres));
         }
+    }
+    let pixels : Vec<Color> = to_calc.par_iter().map(calc_pixel).collect();
+    // sort pixels
+    for row in pixels {
+        buffer.write(row.as_color_str().as_bytes())?;
     }
     buffer.flush()?;
 

@@ -5,7 +5,6 @@ use Color;
 use Ray;
 
 
-
 fn random_in_sphere() -> Point {
     loop {
         let c = Point{
