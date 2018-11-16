@@ -12,6 +12,8 @@ use data::ray::Ray;
 
 pub mod data;
 
+#[allow(dead_code)]
+
 
 #[macro_use]
 extern crate derive_more;
@@ -149,31 +151,31 @@ fn calc_pixel(data : &(i32, i32, &Camera, &SphereList)) -> Color {
     let spheres = data.3;
     let mut col = Color{r:0.0, g:0.0, b:0.0};
 
-    for _s in 0..ns {
-        let u = (i as f32 + random::<f32>()) / nx as f32;
-        let v = (j as f32 + random::<f32>()) / ny as f32;
+    for _s in 0..NS {
+        let u = (i as f32 + random::<f32>()) / NX as f32;
+        let v = (j as f32 + random::<f32>()) / NY as f32;
 
         let ray = cam.get_ray(u, v);
         col += color(&ray, &spheres, 0);
     }
-    col / ns as f32
+    col / NS as f32
 }
 
-const nx : i32 = 1200;
-const ny : i32 = 800;
-const ns : i32 = 100;
+const NX : i32 = 1200;
+const NY : i32 = 800;
+const NS : i32 = 100;
 
 fn main() -> std::io::Result<()> {
     println!("Hello, world!");
     let mut buffer = File::create("out.ppm")?;
-    buffer.write(format!("P3\n{} {}\n255\n", nx, ny).as_bytes())?;
+    buffer.write(format!("P3\n{} {}\n255\n", NX, NY).as_bytes())?;
 
     let cam = get_camera(
         Point{x:13.0, y: 2.0, z: 3.0},
         Point{x:0.0, y: 0.5, z: 0.0},
         Point{x:0.0, y: 1.0, z: 0.0},
         10.0,
-        nx as f32 / ny as f32,
+        NX as f32 / NY as f32,
         0.01,
     );
     let spheres = get_spheres_many();
@@ -181,8 +183,8 @@ fn main() -> std::io::Result<()> {
 
     let mut to_calc = vec![];
 
-    for j in (0..ny-1).rev() {
-        for i in 0..nx {
+    for j in (0..NY-1).rev() {
+        for i in 0..NX {
             to_calc.push((i, j, &cam, &spheres));
         }
     }
