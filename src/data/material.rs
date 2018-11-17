@@ -63,7 +63,7 @@ impl Material {
             Material::Metal(_metal) => {
                 let reflected = reflect(r.direction.unit_vector(), &normal);
                 // hard code fuzz of 0.1
-                let scattered = Ray{origin:p, direction:reflected + random_in_sphere()*0.1};
+                let scattered = Ray{origin:p, direction:reflected + random_in_sphere()*0.1, time:r.time};
                 if scattered.direction.dot(&normal) > 0.0 {
                     return Some(scattered);
                 } 
@@ -71,7 +71,7 @@ impl Material {
             },
             Material::Lambertian(_l) => {
                 let target = normal + random_in_sphere();
-                return Some(Ray{origin:p, direction:target});
+                return Some(Ray{origin:p, direction:target, time:r.time});
             },
             Material::Dielectric(d) => {
 
@@ -89,14 +89,14 @@ impl Material {
                         let reflect_prob = schlick(cos, d.reflective_index);
                         if reflect_prob < random::<f32>() {
                             let reflected = reflect(r.direction.clone(), &normal);
-                            return Some(Ray{origin:p, direction:reflected});
+                            return Some(Ray{origin:p, direction:reflected, time:r.time});
                         } else {
-                            return Some(Ray{origin:p, direction:refracted});
+                            return Some(Ray{origin:p, direction:refracted, time:r.time});
                         }
                     },
                     None => {
                         let reflected = reflect(r.direction.clone(), &normal);
-                        return Some(Ray{origin:p, direction:reflected});
+                        return Some(Ray{origin:p, direction:reflected, time:r.time});
                     },
                 }
             }

@@ -10,15 +10,20 @@ pub struct Hit<'a> {
     pub material: &'a Material,
 }
 
+// TODO: Add stationary Sphere class
+
 pub struct Sphere {
-    pub center: Point,
+    pub center0: Point,
+    pub center1: Point,
     pub radius: f32,
     pub material: Material,
+    pub time0: f32,
+    pub time1: f32,
 }
 
 impl Sphere {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
-        let oc = r.origin.clone() - self.center.clone();
+        let oc = r.origin.clone() - self.get_center(&r.time);
         let a = r.direction.dot(&r.direction);
         let b = oc.dot(&r.direction);
         let c = oc.dot(&oc) - self.radius.clone() * self.radius;
@@ -27,17 +32,26 @@ impl Sphere {
             let temp = (-b - (b*b-a*c).sqrt()) / a;
             if temp < t_max && temp > t_min {
                 let p = r.point_at_parameter(temp);
-                let normal = (p.clone() - self.center.clone()) / self.radius;
+                let normal = (p.clone() - self.get_center(&r.time)) / self.radius;
                 return Some(Hit{t:temp, p:p, normal:normal, material:&self.material})
             }
             let temp = (-b + (b*b-a*c).sqrt()) / a;
             if temp < t_max && temp > t_min {
                 let p = r.point_at_parameter(temp);
-                let normal = (p.clone() - self.center.clone()) / self.radius;
+                let normal = (p.clone() - self.get_center(&r.time)) / self.radius;
                 return Some(Hit{t:temp, p:p, normal:normal, material:&self.material})
             }
         }
         return None
+    }
+
+    fn get_center(&self, time : &f32) -> Point {
+        if self.time0 == self.time1 {
+            return self.center0.clone()
+        } else {
+            let t_diff = (time - self.time0) / (self.time1 - self.time0);
+            return self.center0 + ((self.center1 - self.center0) * t_diff)
+        }
     }
 }
 

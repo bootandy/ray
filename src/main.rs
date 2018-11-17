@@ -68,6 +68,8 @@ struct Camera {
     vertical: Point,
     u: Point,
     v: Point,
+    time1: f32,
+    time0: f32,
     lens_radius: f32,
 }
 
@@ -76,12 +78,13 @@ impl Camera {
         let rd = random_in_unit_disk() * self.lens_radius;
         let offset = self.u * rd.x + self.v *rd.y;
         let end = self.origin - offset;
+        let time = self.time0 + (random::<f32>() * (self.time1 - self.time0));
         let d = self.lower_left.clone() + self.horizontal.clone()*s + self.vertical.clone()*t - end;
-        Ray{origin:self.origin.clone()+ offset , direction:d}
+        Ray{origin:self.origin.clone()+ offset , direction:d, time:time}
     }
 }
 
-fn get_camera(look_from : Point, look_at : Point, up: Point, vfov: f32, aspect : f32, aperture: f32) -> Camera {
+fn get_camera(look_from : Point, look_at : Point, up: Point, vfov: f32, aspect : f32, aperture: f32, t0 : f32, t1: f32) -> Camera {
     let focus_dist = (look_from - look_at).len();
     let lens_radius = aperture / 2.0;
     let theta = vfov * PI / 180.0;
@@ -94,6 +97,7 @@ fn get_camera(look_from : Point, look_at : Point, up: Point, vfov: f32, aspect :
     let lower_left = look_from - (u * half_width*focus_dist) - (v * half_height*focus_dist) - w*focus_dist;
     let horizontal = u * (2.0 * focus_dist * half_width);
     let vertical = v * (2.0 * focus_dist * half_height);
+
     Camera {
         lower_left:lower_left,
         horizontal:horizontal,
@@ -102,47 +106,84 @@ fn get_camera(look_from : Point, look_at : Point, up: Point, vfov: f32, aspect :
         lens_radius: lens_radius,
         u: u,
         v: v,
+        time0: t0,
+        time1: t1,
     }
 }
 
 fn get_old_spheres() -> SphereList {
     return SphereList{spheres: vec![
-        Sphere{center:Point{x:3.0, y:0.0, z:0.5}, radius:0.5, material:Material::Lambertian(Lambertian{albedo:Color{r:0.1, g:0.2, b:0.5}})},
-        Sphere{center:Point{x:0.0, y:-100.5, z:0.0}, radius:100.0, material:Material::Lambertian(Lambertian{albedo:Color{r:0.8, g:0.8, b:0.0}})},
-        Sphere{center:Point{x:2.0, y:0.0, z:-0.5}, radius:0.5, material:Material::Metal(Metal{albedo:Color{r:0.8, g:0.6, b:0.2}})},
-        Sphere{center:Point{x:1.0, y:0.0, z:1.0}, radius:0.5, material:Material::Dielectric(Dielectric{reflective_index:1.5})},
-        Sphere{center:Point{x:1.0, y:0.0, z:1.0}, radius:-0.45, material:Material::Dielectric(Dielectric{reflective_index:1.5})},
+        Sphere{
+            center0:Point{x:3.0, y:0.0, z:0.5}, 
+            center1:Point{x:3.0, y:0.0, z:0.5}, 
+            radius:0.5, 
+            material:Material::Lambertian(Lambertian{albedo:Color{r:0.1, g:0.2, b:0.5}}),
+            time0:0.0,
+            time1:0.0
+        },
+        Sphere{
+            center0:Point{x:0.0, y:-100.5, z:0.0}, 
+            center1:Point{x:0.0, y:-100.5, z:0.0}, 
+            radius:100.0, 
+            material:Material::Lambertian(Lambertian{albedo:Color{r:0.8, g:0.8, b:0.0}}),
+            time0:0.0,
+            time1:0.0,
+        },
+        Sphere{
+            center0:Point{x:2.0, y:0.2, z:-0.5}, 
+            center1:Point{x:2.0, y:0.0, z:-0.5}, 
+            radius: 0.5, 
+            material:Material::Metal(Metal{albedo:Color{r:0.8, g:0.6, b:0.2}}),
+            time0:0.0,
+            time1:1.0,
+        },
+        Sphere{
+            center0:Point{x:1.0, y:0.0, z:1.0}, 
+            center1:Point{x:1.0, y:0.0, z:1.0}, 
+            radius:0.5, 
+            material:Material::Dielectric(Dielectric{reflective_index:1.5}),
+            time0:0.0,
+            time1:1.0,
+        },
+        Sphere{
+            center0:Point{x:1.0, y:0.0, z:1.0}, 
+            center1:Point{x:1.0, y:0.0, z:1.0}, 
+            radius:-0.45, 
+            material:Material::Dielectric(Dielectric{reflective_index:1.5}),
+            time0:0.0,
+            time1:1.0,
+        },
     ]};
 }
 
-fn get_spheres_many() -> SphereList {
-    let mut v : Vec<Sphere> = vec![];
+// fn get_spheres_many() -> SphereList {
+//     let mut v : Vec<Sphere> = vec![];
  
-    v.push( Sphere{center:Point{x:-0.0, y:-1000.0, z:0.0}, radius:1000.0, material:Material::Lambertian(Lambertian{albedo:Color{r:0.5, g:0.5, b:0.5}})});
-    v.push( Sphere{center:Point{x:4.0, y:0.7, z:0.0}, radius:0.7, material:Material::Dielectric( Dielectric{reflective_index:1.5}) });
-    v.push( Sphere{center:Point{x:0.0, y:1.0, z:0.0}, radius:1.0, material:Material::Dielectric( Dielectric{reflective_index:1.5}) });
-    v.push( Sphere{center:Point{x:-4.0, y:1.0, z:0.0}, radius:1.0, material:Material::Metal( Metal{albedo:Color{r:0.7, g:0.6, b:0.5} })});
+//     v.push( Sphere{center:Point{x:-0.0, y:-1000.0, z:0.0}, radius:1000.0, material:Material::Lambertian(Lambertian{albedo:Color{r:0.5, g:0.5, b:0.5}})});
+//     v.push( Sphere{center:Point{x:4.0, y:0.7, z:0.0}, radius:0.7, material:Material::Dielectric( Dielectric{reflective_index:1.5}) });
+//     v.push( Sphere{center:Point{x:0.0, y:1.0, z:0.0}, radius:1.0, material:Material::Dielectric( Dielectric{reflective_index:1.5}) });
+//     v.push( Sphere{center:Point{x:-4.0, y:1.0, z:0.0}, radius:1.0, material:Material::Metal( Metal{albedo:Color{r:0.7, g:0.6, b:0.5} })});
  
-    for a in -7..7 {
-        for b in -7..7 {
-            let center = Point{x:a as f32 + 0.9 * random::<f32>(), y:0.2, z:b as f32 + 0.9*random::<f32>()};
-            let sphere = match random::<f32>() {
-                x if x < 0.7 => {
-                    Sphere{center:center, radius:0.2, material:Material::Lambertian(Lambertian{albedo:Color{r:random(), g:random(), b:random()}})}
-                },
-                x if x < 0.85 => {
-                    Sphere{center:center, radius:0.2, material:Material::Metal(Metal{albedo:Color{r:random(), g:random(), b:random()}})}
-                },
-                _ => {
-                    Sphere{center:center, radius:0.2, material:Material::Dielectric(Dielectric{reflective_index:1.5})}
-                },
-            };
-            v.push(sphere);
-        }
-    }
+//     for a in -7..7 {
+//         for b in -7..7 {
+//             let center = Point{x:a as f32 + 0.9 * random::<f32>(), y:0.2, z:b as f32 + 0.9*random::<f32>()};
+//             let sphere = match random::<f32>() {
+//                 x if x < 0.7 => {
+//                     Sphere{center:center, radius:0.2, material:Material::Lambertian(Lambertian{albedo:Color{r:random(), g:random(), b:random()}})}
+//                 },
+//                 x if x < 0.85 => {
+//                     Sphere{center:center, radius:0.2, material:Material::Metal(Metal{albedo:Color{r:random(), g:random(), b:random()}})}
+//                 },
+//                 _ => {
+//                     Sphere{center:center, radius:0.2, material:Material::Dielectric(Dielectric{reflective_index:1.5})}
+//                 },
+//             };
+//             v.push(sphere);
+//         }
+//     }
     
-    return SphereList{spheres:v}
-}
+//     return SphereList{spheres:v}
+// }
 
 fn calc_pixel(data : &(i32, i32, &Camera, &SphereList)) -> Color {
     let i = data.0;
@@ -161,8 +202,8 @@ fn calc_pixel(data : &(i32, i32, &Camera, &SphereList)) -> Color {
     col / NS as f32
 }
 
-const NX : i32 = 1200;
-const NY : i32 = 800;
+const NX : i32 = 400;
+const NY : i32 = 200;
 const NS : i32 = 100;
 
 fn main() -> std::io::Result<()> {
@@ -177,9 +218,11 @@ fn main() -> std::io::Result<()> {
         10.0,
         NX as f32 / NY as f32,
         0.01,
+        0.0,
+        1.0,
     );
-    let spheres = get_spheres_many();
-    //let spheres = get_old_spheres();
+    //let spheres = get_spheres_many();
+    let spheres = get_old_spheres();
 
     let mut to_calc = vec![];
 
