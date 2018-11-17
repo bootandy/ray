@@ -26,7 +26,7 @@ fn color(r: &Ray, spheres: &SphereList, depth: u8) -> Color {
     unsafe {
         counter += 1;
     }
-    match spheres.hit(r, 0.001, f32::MAX){
+    match (*spheres).hit(r, 0.001, f32::MAX){
         Some(hit) => {
             if depth < 50 {
                 let scattered = hit.material.scatter(r, hit.normal.clone(), hit.p);
@@ -113,46 +113,34 @@ fn get_camera(look_from : Point, look_at : Point, up: Point, vfov: f32, aspect :
 
 fn get_old_spheres() -> SphereList {
     return SphereList{spheres: vec![
-        Sphere{
-            center0:Point{x:3.0, y:0.0, z:0.5}, 
-            center1:Point{x:3.0, y:0.0, z:0.5}, 
+        SphereThing::S(Sphere{
+            center:Point{x:3.0, y:0.0, z:0.5}, 
             radius:0.5, 
             material:Material::Lambertian(Lambertian{albedo:Color{r:0.1, g:0.2, b:0.5}}),
-            time0:0.0,
-            time1:0.0
-        },
-        Sphere{
-            center0:Point{x:0.0, y:-100.5, z:0.0}, 
-            center1:Point{x:0.0, y:-100.5, z:0.0}, 
+        }),
+        SphereThing::S(Sphere{
+            center:Point{x:0.0, y:-100.5, z:0.0}, 
             radius:100.0, 
             material:Material::Lambertian(Lambertian{albedo:Color{r:0.8, g:0.8, b:0.0}}),
-            time0:0.0,
-            time1:0.0,
-        },
-        Sphere{
+        }),
+        SphereThing::SM(SphereMoving{
             center0:Point{x:2.0, y:0.2, z:-0.5}, 
             center1:Point{x:2.0, y:0.0, z:-0.5}, 
             radius: 0.5, 
             material:Material::Metal(Metal{albedo:Color{r:0.8, g:0.6, b:0.2}}),
             time0:0.0,
             time1:1.0,
-        },
-        Sphere{
-            center0:Point{x:1.0, y:0.0, z:1.0}, 
-            center1:Point{x:1.0, y:0.0, z:1.0}, 
+        }),
+        SphereThing::S(Sphere{
+            center:Point{x:1.0, y:0.0, z:1.0}, 
             radius:0.5, 
             material:Material::Dielectric(Dielectric{reflective_index:1.5}),
-            time0:0.0,
-            time1:1.0,
-        },
-        Sphere{
-            center0:Point{x:1.0, y:0.0, z:1.0}, 
-            center1:Point{x:1.0, y:0.0, z:1.0}, 
+        }),
+        SphereThing::S(Sphere{
+            center:Point{x:1.0, y:0.0, z:1.0}, 
             radius:-0.45, 
             material:Material::Dielectric(Dielectric{reflective_index:1.5}),
-            time0:0.0,
-            time1:1.0,
-        },
+        }),
     ]};
 }
 

@@ -3,6 +3,29 @@ use Point;
 use Ray;
 use Material;
 
+fn hit<'a>(r: &Ray, t_min: f32, t_max: f32, radius: f32, material :&'a Material, center: &Point) -> Option<Hit<'a>> {
+    let oc = r.origin.clone() - *center;
+    let a = r.direction.dot(&r.direction);
+    let b = oc.dot(&r.direction);
+    let c = oc.dot(&oc) - radius * radius;
+    let d = b * b - (a * c);
+    if d > 0.0 {
+        let temp = (-b - (b*b-a*c).sqrt()) / a;
+        if temp < t_max && temp > t_min {
+            let p = r.point_at_parameter(temp);
+            let normal = (p.clone() - *center) / radius;
+            return Some(Hit{t:temp, p:p, normal:normal, material:material})
+        }
+        let temp = (-b + (b*b-a*c).sqrt()) / a;
+        if temp < t_max && temp > t_min {
+            let p = r.point_at_parameter(temp);
+            let normal = (p.clone() - *center) / radius;
+            return Some(Hit{t:temp, p:p, normal:normal, material:material})
+        }
+    }
+    return None
+}
+
 pub struct Hit<'a> {
     pub t: f32,
     pub p: Point,
@@ -10,9 +33,38 @@ pub struct Hit<'a> {
     pub material: &'a Material,
 }
 
-// TODO: Add stationary Sphere class
+trait Hittable {
+    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit>;
+}
+
+pub enum SphereThing {
+    S(Sphere),
+    SM(SphereMoving),
+}
+
+impl Hittable for SphereThing {
+    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit>{
+        match self {
+            SphereThing::S(s) => s.hit(r, t_min, t_max),
+            SphereThing::SM(s) => s.hit(r, t_min, t_max),
+        }
+    }
+}
+
 
 pub struct Sphere {
+    pub center: Point,
+    pub radius: f32,
+    pub material: Material,
+}
+impl Hittable for Sphere {
+    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
+        hit(r, t_min, t_max, self.radius, &self.material, &self.center)
+    }
+}
+
+
+pub struct SphereMoving {
     pub center0: Point,
     pub center1: Point,
     pub radius: f32,
@@ -21,30 +73,12 @@ pub struct Sphere {
     pub time1: f32,
 }
 
-impl Sphere {
+impl Hittable for SphereMoving {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
-        let oc = r.origin.clone() - self.get_center(&r.time);
-        let a = r.direction.dot(&r.direction);
-        let b = oc.dot(&r.direction);
-        let c = oc.dot(&oc) - self.radius.clone() * self.radius;
-        let d = b * b - (a * c);
-        if d > 0.0 {
-            let temp = (-b - (b*b-a*c).sqrt()) / a;
-            if temp < t_max && temp > t_min {
-                let p = r.point_at_parameter(temp);
-                let normal = (p.clone() - self.get_center(&r.time)) / self.radius;
-                return Some(Hit{t:temp, p:p, normal:normal, material:&self.material})
-            }
-            let temp = (-b + (b*b-a*c).sqrt()) / a;
-            if temp < t_max && temp > t_min {
-                let p = r.point_at_parameter(temp);
-                let normal = (p.clone() - self.get_center(&r.time)) / self.radius;
-                return Some(Hit{t:temp, p:p, normal:normal, material:&self.material})
-            }
-        }
-        return None
+        hit(r, t_min, t_max, self.radius, &self.material, &self.get_center(&r.time))
     }
-
+}
+impl SphereMoving{
     fn get_center(&self, time : &f32) -> Point {
         if self.time0 == self.time1 {
             return self.center0.clone()
@@ -56,7 +90,7 @@ impl Sphere {
 }
 
 pub struct SphereList {
-    pub spheres: Vec<Sphere>,
+    pub spheres: Vec<SphereThing>,
 }
 impl SphereList {
     pub fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
