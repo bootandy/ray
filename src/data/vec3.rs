@@ -59,4 +59,16 @@ impl Point  {
             z: self.z / pp,
         }
     }
+
+    pub fn nth(&self, n : i32) -> f32 {
+        if n == 0 {
+            self.x
+        } else if n == 1 {
+            self.y
+        } else if n == 2 {
+            self.z
+        } else {
+            panic!("0 - 2 only");
+        }
+    }
 }

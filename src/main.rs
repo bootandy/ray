@@ -14,37 +14,39 @@ pub mod data;
 
 #[allow(dead_code)]
 
-
 #[macro_use]
 extern crate derive_more;
 extern crate rand;
 extern crate rayon;
+//#[macro_use]
+//extern crate itertools;
 
-static mut counter: u64 = 0;
+//https://stackoverflow.com/questions/42647900/per-thread-initialization-in-rayon
 
-fn color(r: &Ray, spheres: &SphereList, depth: u8) -> Color {
-    unsafe {
-        counter += 1;
+fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
+
+    if depth >= 50 {
+        return Color{r:0.0, g:0.0, b:0.0}
     }
-    match (*spheres).hit(r, 0.001, f32::MAX){
-        Some(hit) => {
-            if depth < 50 {
-                let scattered = hit.material.scatter(r, hit.normal.clone(), hit.p);
-                if let Some(scatter_ray) = scattered {
-                    let albedo = hit.material.get_albedo();
-                    let c = color(&scatter_ray, spheres, depth+1);
-                    return c.mul(albedo);
-                }
+
+    match bound_box.hit(r) {
+        Some(tuple) => {
+            let hit = tuple.1;
+            let scattered = hit.material.scatter(r, hit.normal.clone(), hit.p);
+            if let Some(scatter_ray) = scattered {
+                let albedo = hit.material.get_albedo();
+                let c = color(&scatter_ray, bound_box, depth+1);
+                return c.mul(albedo);
             }
             return Color{r:0.0, g:0.0, b:0.0};
         },
-        None => {
-            let ud = r.direction.unit_vector();
-            let t = (ud.y + 1.0) * 0.5;
-            let init_c = 1.0 - t;
-            return Color{r:init_c, g: init_c, b:init_c} + Color{r:0.5*t, g:0.7*t, b:1.0*t}
-        }
+        None => {},
     }
+
+    let ud = r.direction.unit_vector();
+    let t = (ud.y + 1.0) * 0.5;
+    let init_c = 1.0 - t;
+    return Color{r:init_c, g: init_c, b:init_c} + Color{r:0.5*t, g:0.7*t, b:1.0*t}
 }
 
 fn random_in_unit_disk() -> Point {
@@ -144,40 +146,40 @@ fn get_old_spheres() -> SphereList {
     ]};
 }
 
-// fn get_spheres_many() -> SphereList {
-//     let mut v : Vec<Sphere> = vec![];
+fn get_spheres_many() -> SphereList {
+    let mut v : Vec<SphereThing> = vec![];
  
-//     v.push( Sphere{center:Point{x:-0.0, y:-1000.0, z:0.0}, radius:1000.0, material:Material::Lambertian(Lambertian{albedo:Color{r:0.5, g:0.5, b:0.5}})});
-//     v.push( Sphere{center:Point{x:4.0, y:0.7, z:0.0}, radius:0.7, material:Material::Dielectric( Dielectric{reflective_index:1.5}) });
-//     v.push( Sphere{center:Point{x:0.0, y:1.0, z:0.0}, radius:1.0, material:Material::Dielectric( Dielectric{reflective_index:1.5}) });
-//     v.push( Sphere{center:Point{x:-4.0, y:1.0, z:0.0}, radius:1.0, material:Material::Metal( Metal{albedo:Color{r:0.7, g:0.6, b:0.5} })});
+    v.push( SphereThing::S(Sphere{center:Point{x:-0.0, y:-1000.0, z:0.0}, radius:1000.0, material:Material::Lambertian(Lambertian{albedo:Color{r:0.5, g:0.5, b:0.5}})}));
+    v.push( SphereThing::S(Sphere{center:Point{x:4.0, y:0.7, z:0.0}, radius:0.7, material:Material::Dielectric( Dielectric{reflective_index:1.5}) }));
+    v.push( SphereThing::S(Sphere{center:Point{x:0.0, y:1.0, z:0.0}, radius:1.0, material:Material::Dielectric( Dielectric{reflective_index:1.5}) }));
+    v.push( SphereThing::S(Sphere{center:Point{x:-4.0, y:1.0, z:0.0}, radius:1.0, material:Material::Metal( Metal{albedo:Color{r:0.7, g:0.6, b:0.5} })}));
  
-//     for a in -7..7 {
-//         for b in -7..7 {
-//             let center = Point{x:a as f32 + 0.9 * random::<f32>(), y:0.2, z:b as f32 + 0.9*random::<f32>()};
-//             let sphere = match random::<f32>() {
-//                 x if x < 0.7 => {
-//                     Sphere{center:center, radius:0.2, material:Material::Lambertian(Lambertian{albedo:Color{r:random(), g:random(), b:random()}})}
-//                 },
-//                 x if x < 0.85 => {
-//                     Sphere{center:center, radius:0.2, material:Material::Metal(Metal{albedo:Color{r:random(), g:random(), b:random()}})}
-//                 },
-//                 _ => {
-//                     Sphere{center:center, radius:0.2, material:Material::Dielectric(Dielectric{reflective_index:1.5})}
-//                 },
-//             };
-//             v.push(sphere);
-//         }
-//     }
+    for a in -7..7 {
+        for b in -7..7 {
+            let center = Point{x:a as f32 + 0.9 * random::<f32>(), y:0.2, z:b as f32 + 0.9*random::<f32>()};
+            let sphere = match random::<f32>() {
+                x if x < 0.7 => {
+                    Sphere{center:center, radius:0.2, material:Material::Lambertian(Lambertian{albedo:Color{r:random(), g:random(), b:random()}})}
+                },
+                x if x < 0.85 => {
+                    Sphere{center:center, radius:0.2, material:Material::Metal(Metal{albedo:Color{r:random(), g:random(), b:random()}})}
+                },
+                _ => {
+                    Sphere{center:center, radius:0.2, material:Material::Dielectric(Dielectric{reflective_index:1.5})}
+                },
+            };
+            v.push(SphereThing::S(sphere));
+        }
+    }
     
-//     return SphereList{spheres:v}
-// }
+    return SphereList{spheres:v}
+}
 
-fn calc_pixel(data : &(i32, i32, &Camera, &SphereList)) -> Color {
+fn calc_pixel(data : &(i32, i32, &Camera, BvhBox)) -> Color {
     let i = data.0;
     let j = data.1;
     let cam = data.2;
-    let spheres = data.3;
+    let bvh_box = &data.3;
     let mut col = Color{r:0.0, g:0.0, b:0.0};
 
     for _s in 0..NS {
@@ -185,7 +187,7 @@ fn calc_pixel(data : &(i32, i32, &Camera, &SphereList)) -> Color {
         let v = (j as f32 + random::<f32>()) / NY as f32;
 
         let ray = cam.get_ray(u, v);
-        col += color(&ray, &spheres, 0);
+        col += color(&ray, &bvh_box, 0);
     }
     col / NS as f32
 }
@@ -209,14 +211,15 @@ fn main() -> std::io::Result<()> {
         0.0,
         1.0,
     );
-    //let spheres = get_spheres_many();
-    let spheres = get_old_spheres();
+    let spherelist = get_spheres_many();
+    //let spherelist = get_old_spheres();
 
     let mut to_calc = vec![];
 
+    let bound_box = get_bvh_box2(spherelist.spheres.clone());
     for j in (0..NY-1).rev() {
         for i in 0..NX {
-            to_calc.push((i, j, &cam, &spheres));
+            to_calc.push((i, j, &cam, bound_box.clone()));
         }
     }
     let pixels : Vec<Color> = to_calc.par_iter().map(calc_pixel).collect();
@@ -226,8 +229,5 @@ fn main() -> std::io::Result<()> {
     }
     buffer.flush()?;
 
-    unsafe {
-        println!("{:?}", counter);
-    }
     Ok(())
 }

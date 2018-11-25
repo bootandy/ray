@@ -40,16 +40,20 @@ fn schlick(cos: f32, ref_idx: f32) -> f32 {
     return r0 + (1.0 - r0)* (1.0 - cos).powi(5)
 }
 
+#[derive(Clone)]
 pub struct Metal {
     pub albedo: Color,
 }
+#[derive(Clone)]
 pub struct Lambertian {
     pub albedo: Color,
 }
+#[derive(Clone)]
 pub struct Dielectric {
     pub reflective_index: f32,
 }
 
+#[derive(Clone)]
 pub enum Material {
     Metal(Metal),
     Lambertian(Lambertian),
