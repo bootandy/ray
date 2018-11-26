@@ -1,0 +1,32 @@
+ 123.83s user 1.02s system 989% cpu 12.620 total
+
+ 40.67s user 0.12s system 1152% cpu 3.539 total
+
+ 128.37s user 0.17s system 1171% cpu 10.973 total
+
+# First rewrite with boxes:
+37.30s user 0.11s system 1140% cpu 3.280 total
+
+# Second rewrite with boxes
+43.59s user 0.10s system 1160% cpu 3.765 total
+# Inlined version of second gives 
+35.70s user 0.19s system 1128% cpu 3.181 total
+
+
+
+
+
+#Big one
+#First rewrite
+519.95s user 1.30s system 1146% cpu 45.462 total
+627.09s user 1.32s system 1164% cpu 53.950 total
+# First inlined:
+548.90s user 1.26s system 1147% cpu 47.956 total
+554.19s user 1.35s system 1145% cpu 48.482 total
+
+
+
+# Second inlined 
+491.62s user 1.41s system 1129% cpu 43.663 total
+509.65s user 1.35s system 1137% cpu 44.904 total
+

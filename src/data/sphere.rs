@@ -180,7 +180,7 @@ pub struct BvhLeaf {
 // }
 pub struct PossibleHit<'a> {
     pub boxx: &'a BvhBox,
-    pub r: f32,
+    pub t: f32,
 }
 
 impl BvhNode {
@@ -189,7 +189,7 @@ impl BvhNode {
             Some(rr) => {
                 return Some(PossibleHit {
                     boxx: the_enum,
-                    r: rr,
+                    t: rr,
                 })
             },
             None => { return None },
@@ -202,13 +202,29 @@ impl BvhLeaf {
             Some(rr) => {
                 return Some(PossibleHit {
                     boxx: the_enum,
-                    r: rr,
+                    t: rr,
                 })
             },
             None => { return None },
         }
     }
 }
+
+fn unpack_dig<'a>(a: Option<Hit<'a>>, b: Option<Hit<'a>>) -> Option<Hit<'a>> {
+    match(a, b) {
+        (Some(l), Some(r)) => {
+            if l.t < r.t {
+                return Some(l);
+            } else {
+                return Some(r);
+            }
+        },
+        (Some(l), None) => { return Some(l);},
+        (None, Some(r)) => { return Some(r);},
+        (None, None) => { return None; },
+    }
+}
+
 
 impl BvhBox {
     fn hit(&self, r: &Ray) -> Option<PossibleHit> {
@@ -232,19 +248,24 @@ impl BvhBox {
                 let right_hit = node.right.hit(r);
 
                 if left_hit.is_some() && right_hit.is_some() {
-                    let left_dig = left_hit.as_ref().unwrap().boxx.dig(r);
-                    let right_dig = right_hit.as_ref().unwrap().boxx.dig(r);
-                    match(left_dig, right_dig) {
-                        (Some(l), Some(r)) => {
-                            if l.t < r.t {
-                                return Some(l);
-                            } else {
-                                return Some(r);
-                            }
-                        },
-                        (Some(l), None) => { return Some(l);},
-                        (None, Some(r)) => { return Some(r);},
-                        (None, None) => { return None; },
+                    let left_hit_t = left_hit.as_ref().unwrap().t; 
+                    let right_hit_t = right_hit.as_ref().unwrap().t; 
+                    if left_hit_t < right_hit_t {
+                        let left_dig = left_hit.as_ref().unwrap().boxx.dig(r);
+                        if left_dig.is_some() && left_dig.as_ref().unwrap().t < right_hit_t {
+                            return left_dig;
+                        } else {
+                            let right_dig = right_hit.as_ref().unwrap().boxx.dig(r);
+                            return unpack_dig(left_dig, right_dig);
+                        }
+                    } else {
+                        let right_dig = right_hit.as_ref().unwrap().boxx.dig(r);
+                        if right_dig.is_some() && right_dig.as_ref().unwrap().t < left_hit_t {
+                            return right_dig;
+                        } else {
+                            let left_dig = left_hit.as_ref().unwrap().boxx.dig(r);
+                            return unpack_dig(left_dig, right_dig);
+                        }
                     }
                 } 
                 else if left_hit.is_some() {
@@ -258,9 +279,7 @@ impl BvhBox {
     }
     pub fn get_box(&self) -> &BoundingBox {
         match self {
-            BvhBox::Leaf(leaf) => {
-                return &leaf.boxx
-            },
+            BvhBox::Leaf(leaf) => { leaf.get_box() }
             BvhBox::Node(node) => {
                 return &node.boxx
             }
@@ -286,7 +305,6 @@ pub fn get_bvh_box2(spheres: Vec<SphereThing>) -> BvhBox {
     get_bvh_box(&mut bounds)
 }
 
-// change to output a spherething`
 pub fn get_bvh_box<'a>(spheres: &'a mut [BvhLeaf]) -> BvhBox {
     let axis :i32 = (random::<f32>() * 3.0) as i32;
 
@@ -322,7 +340,6 @@ pub struct BoundingBox {
 }
 
 impl BoundingBox {
-    // idea: return tmin?
     pub fn hit(&self, r: &Ray) -> Option<f32> {
         let mut tmin = f32::MIN;
         let mut tmax = f32::MAX;
