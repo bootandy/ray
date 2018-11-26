@@ -4,6 +4,7 @@ use std::f32;
 use std::f32::consts::PI;
 use rand::random;
 use rayon::prelude::*;
+use std::cell::RefCell;
 
 use data::vec3::*;
 use data::material::*;
@@ -21,7 +22,6 @@ extern crate rayon;
 //#[macro_use]
 //extern crate itertools;
 
-//https://stackoverflow.com/questions/42647900/per-thread-initialization-in-rayon
 
 fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
 
@@ -29,9 +29,8 @@ fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
         return Color{r:0.0, g:0.0, b:0.0}
     }
 
-    match bound_box.hit(r) {
-        Some(tuple) => {
-            let hit = tuple.1;
+    match bound_box.dig(r) {
+        Some(hit) => {
             let scattered = hit.material.scatter(r, hit.normal.clone(), hit.p);
             if let Some(scatter_ray) = scattered {
                 let albedo = hit.material.get_albedo();
@@ -40,13 +39,14 @@ fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
             }
             return Color{r:0.0, g:0.0, b:0.0};
         },
-        None => {},
+        None => {
+            let ud = r.direction.unit_vector();
+            let t = (ud.y + 1.0) * 0.5;
+            let init_c = 1.0 - t;
+            return Color{r:init_c, g: init_c, b:init_c} + Color{r:0.5*t, g:0.7*t, b:1.0*t}
+        },
     }
 
-    let ud = r.direction.unit_vector();
-    let t = (ud.y + 1.0) * 0.5;
-    let init_c = 1.0 - t;
-    return Color{r:init_c, g: init_c, b:init_c} + Color{r:0.5*t, g:0.7*t, b:1.0*t}
 }
 
 fn random_in_unit_disk() -> Point {
@@ -175,11 +175,10 @@ fn get_spheres_many() -> SphereList {
     return SphereList{spheres:v}
 }
 
-fn calc_pixel(data : &(i32, i32, &Camera, BvhBox)) -> Color {
+fn calc_pixel(data : &(i32, i32, &Camera), bvh_box: &mut BvhBox)  -> Color {
     let i = data.0;
     let j = data.1;
     let cam = data.2;
-    let bvh_box = &data.3;
     let mut col = Color{r:0.0, g:0.0, b:0.0};
 
     for _s in 0..NS {
@@ -187,7 +186,7 @@ fn calc_pixel(data : &(i32, i32, &Camera, BvhBox)) -> Color {
         let v = (j as f32 + random::<f32>()) / NY as f32;
 
         let ray = cam.get_ray(u, v);
-        col += color(&ray, &bvh_box, 0);
+        col += color(&ray, bvh_box, 0);
     }
     col / NS as f32
 }
@@ -219,11 +218,24 @@ fn main() -> std::io::Result<()> {
     let bound_box = get_bvh_box2(spherelist.spheres.clone());
     for j in (0..NY-1).rev() {
         for i in 0..NX {
-            to_calc.push((i, j, &cam, bound_box.clone()));
+            to_calc.push((i, j, &cam));
         }
     }
-    let pixels : Vec<Color> = to_calc.par_iter().map(calc_pixel).collect();
-    // sort pixels
+    println!("Built boxes");
+
+    // Do fancy thread local storage of the BVH boxes
+    thread_local!(static STORE: RefCell<Option<BvhBox>> = RefCell::new(None));
+
+    let pixels : Vec<Color> = to_calc.par_iter().map(|a| {
+        STORE.with(|bvh| {
+            let mut local_bvh = bvh.borrow_mut();
+            if local_bvh.is_none() {
+                *local_bvh = Some(bound_box.clone());
+            }
+            calc_pixel(a, local_bvh.as_mut().unwrap())
+        })
+    }).collect();
+
     for row in pixels {
         buffer.write(row.as_color_str().as_bytes())?;
     }

@@ -8,7 +8,7 @@ use Material;
 use rand::random;
 
 
-fn hit<'a>(r: &Ray, t_min: f32, t_max: f32, radius: f32, material :&'a Material, center: &Point) -> Option<(f32, Hit<'a>)> {
+fn hit<'a>(r: &Ray, t_min: f32, t_max: f32, radius: f32, material :&'a Material, center: &Point) -> Option<Hit<'a>> {
     let oc = r.origin.clone() - *center;
     let a = r.direction.dot(&r.direction);
     let b = oc.dot(&r.direction);
@@ -19,13 +19,13 @@ fn hit<'a>(r: &Ray, t_min: f32, t_max: f32, radius: f32, material :&'a Material,
         if temp < t_max && temp > t_min {
             let p = r.point_at_parameter(temp);
             let normal = (p.clone() - *center) / radius;
-            return Some((temp, Hit{t:temp, p:p, normal:normal, material:material}))
+            return Some(Hit{t:temp, p:p, normal:normal, material:material})
         }
         let temp = (-b + (b*b-a*c).sqrt()) / a;
         if temp < t_max && temp > t_min {
             let p = r.point_at_parameter(temp);
             let normal = (p.clone() - *center) / radius;
-            return Some((temp, Hit{t:temp, p:p, normal:normal, material:material}))
+            return Some(Hit{t:temp, p:p, normal:normal, material:material})
         }
     }
     return None
@@ -53,7 +53,7 @@ pub struct Hit<'a> {
 }
 
 pub trait Hittable {
-    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<(f32, Hit)>;
+    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit>;
     fn bounding_box(&self) -> BoundingBox; 
 }
 
@@ -64,7 +64,7 @@ pub enum SphereThing {
 }
 
 impl Hittable for SphereThing {
-    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<(f32, Hit)> {
+    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         match self {
             SphereThing::S(s) => s.hit(r, t_min, t_max),
             SphereThing::SM(s) => s.hit(r, t_min, t_max),
@@ -86,7 +86,7 @@ pub struct Sphere {
     pub material: Material,
 }
 impl Hittable for Sphere {
-    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<(f32, Hit)> {
+    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         hit(r, t_min, t_max, self.radius, &self.material, &self.center)
     }
     fn bounding_box(&self) -> BoundingBox {
@@ -110,7 +110,7 @@ pub struct SphereMoving {
 }
 
 impl Hittable for SphereMoving {
-    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<(f32, Hit)> {
+    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         hit(r, t_min, t_max, self.radius, &self.material, &self.get_center(&r.time))
     }
     fn bounding_box(&self) -> BoundingBox {
@@ -146,39 +146,11 @@ pub struct SphereList {
     pub spheres: Vec<SphereThing>,
 }
 impl SphereList {
-    pub fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<(f32, Hit)> {
+    pub fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         panic!("Not here!")
-        /*
-        let mut what_we_hit : Option<(f32, Hit)> = None;
-        let mut closest_so_far = t_max;
-        for s in self.spheres.iter() {
-            match s.hit(r, t_min, closest_so_far) { // bug
-                Some(h) => {
-                    match(what_we_hit) {
-                        None => {
-                            what_we_hit = Some(h);
-                        },
-                        Some(hh) => {
-                            if hh.0 < h.0 {
-                                what_we_hit = Some(hh);
-                            }
-                        }
-                    }
-                },
-                None => {},
-            }
-        }
-        return what_we_hit*/
     }
     fn bounding_box(&self) -> BoundingBox {
         panic!("do not call bounding_box on spherelist!")
-/*        assert!(self.spheres.len() >= 1);
-        let mut result = self.spheres[0].bounding_box();
-        for s in self.spheres.iter().skip(1) {
-            result = surrounding_box(&result, &s.bounding_box());
-        }
-        result
-        */
     }
 }
 
@@ -202,27 +174,83 @@ pub struct BvhLeaf {
     pub has_a: SphereThing,
 }
 
+// pub enum HitResult {
+//     Possible(PossibleHit),
+//     Hit(Hit),
+// }
+pub struct PossibleHit<'a> {
+    pub boxx: &'a BvhBox,
+    pub r: f32,
+}
+
+impl BvhNode {
+    pub fn hit<'a>(&self, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
+        match self.boxx.hit(r)  {
+            Some(rr) => {
+                return Some(PossibleHit {
+                    boxx: the_enum,
+                    r: rr,
+                })
+            },
+            None => { return None },
+        }
+    }
+}
+impl BvhLeaf {
+    pub fn hit<'a>(&self, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
+        match self.boxx.hit(r)  {
+            Some(rr) => {
+                return Some(PossibleHit {
+                    boxx: the_enum,
+                    r: rr,
+                })
+            },
+            None => { return None },
+        }
+    }
+}
+
 impl BvhBox {
-    pub fn hit(&self, r: &Ray) -> Option<(f32, Hit)> {
+    fn hit(&self, r: &Ray) -> Option<PossibleHit> {
+        match self {
+            BvhBox::Leaf(l) => l.hit(&self, r),
+            BvhBox::Node(n) => n.hit(&self, r),
+        }
+    }
+
+    pub fn dig(&self, r: &Ray) -> Option<Hit> {
         match self {
             BvhBox::Leaf(leaf) => {
-                return leaf.has_a.hit(r, 0.0001, f32::MAX)
+                let the_hit = leaf.has_a.hit(r, 0.0001, f32::MAX);
+                match the_hit {
+                    Some(h) => { return Some(h) }
+                    None => { return None },
+                }
             },
             BvhBox::Node(node) => {
                 let left_hit = node.left.hit(r);
                 let right_hit = node.right.hit(r);
 
                 if left_hit.is_some() && right_hit.is_some() {
-                    if left_hit.as_ref().unwrap().0 < right_hit.as_ref().unwrap().0 {
-                        return left_hit;
-                    } else {
-                        return right_hit;
+                    let left_dig = left_hit.as_ref().unwrap().boxx.dig(r);
+                    let right_dig = right_hit.as_ref().unwrap().boxx.dig(r);
+                    match(left_dig, right_dig) {
+                        (Some(l), Some(r)) => {
+                            if l.t < r.t {
+                                return Some(l);
+                            } else {
+                                return Some(r);
+                            }
+                        },
+                        (Some(l), None) => { return Some(l);},
+                        (None, Some(r)) => { return Some(r);},
+                        (None, None) => { return None; },
                     }
                 } 
                 else if left_hit.is_some() {
-                    return left_hit;
+                    return left_hit.as_ref().unwrap().boxx.dig(r);
                 } else if right_hit.is_some() {
-                    return right_hit;
+                    return right_hit.as_ref().unwrap().boxx.dig(r);
                 }
             },
         };
