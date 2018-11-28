@@ -1,5 +1,3 @@
-
-
 #[derive(Debug, Clone, Copy, From, Add, AddAssign, Sub, Mul, Div)]
 pub struct Point {
     pub x: f32,
@@ -9,33 +7,42 @@ pub struct Point {
 
 #[derive(Debug, Clone, Copy, From, Add, AddAssign, Sub, Mul, Div)]
 pub struct Color {
-    pub r:f32,
-    pub g:f32,
-    pub b:f32,
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
 }
 
 fn len(a: f32, b: f32, c: f32) -> f32 {
     (a * a + b * b + c * c).sqrt()
 }
 
-fn to_bytes(a : f32) -> u8 {
+fn to_bytes(a: f32) -> u8 {
     (255.99 * a.sqrt()) as u8
 }
 impl Color {
     pub fn as_color_str(&self) -> String {
-        format!("{} {} {}\n", to_bytes(self.r), to_bytes(self.g), to_bytes(self.b))
+        format!(
+            "{} {} {}\n",
+            to_bytes(self.r),
+            to_bytes(self.g),
+            to_bytes(self.b)
+        )
     }
     pub fn mul(&self, rhs: &Color) -> Color {
-        Color{r:self.r*rhs.r, g:self.g*rhs.g, b:self.b*rhs.b}
+        Color {
+            r: self.r * rhs.r,
+            g: self.g * rhs.g,
+            b: self.b * rhs.b,
+        }
     }
     pub fn len(&self) -> f32 {
         len(self.r, self.g, self.b)
     }
 }
 
-impl Point  {
+impl Point {
     pub fn dot(&self, r: &Point) -> f32 {
-        self.x * r.x + self.y * r.y + self.z * r.z 
+        self.x * r.x + self.y * r.y + self.z * r.z
     }
     pub fn squared_length(&self) -> f32 {
         self.x * self.x + self.y * self.y + self.z * self.z
@@ -51,7 +58,7 @@ impl Point  {
         len(self.x, self.y, self.z)
     }
 
-    pub fn unit_vector(&self)-> Point {
+    pub fn unit_vector(&self) -> Point {
         let pp = self.len();
         Point {
             x: self.x / pp,
@@ -60,7 +67,7 @@ impl Point  {
         }
     }
 
-    pub fn nth(&self, n : i32) -> f32 {
+    pub fn nth(&self, n: i32) -> f32 {
         if n == 0 {
             self.x
         } else if n == 1 {

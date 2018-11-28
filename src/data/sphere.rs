@@ -1,37 +1,53 @@
 use std::f32;
 
-use std::cmp::Ordering::Equal;                                                                           
+use std::cmp::Ordering::Equal;
 
+use rand::random;
+use Material;
 use Point;
 use Ray;
-use Material;
-use rand::random;
 
-
-fn hit<'a>(r: &Ray, t_min: f32, t_max: f32, radius: f32, material :&'a Material, center: &Point) -> Option<Hit<'a>> {
+fn hit<'a>(
+    r: &Ray,
+    t_min: f32,
+    t_max: f32,
+    radius: f32,
+    material: &'a Material,
+    center: &Point,
+) -> Option<Hit<'a>> {
     let oc = r.origin.clone() - *center;
     let a = r.direction.dot(&r.direction);
     let b = oc.dot(&r.direction);
     let c = oc.dot(&oc) - radius * radius;
     let d = b * b - (a * c);
     if d > 0.0 {
-        let temp = (-b - (b*b-a*c).sqrt()) / a;
+        let temp = (-b - (b * b - a * c).sqrt()) / a;
         if temp < t_max && temp > t_min {
             let p = r.point_at_parameter(temp);
             let normal = (p.clone() - *center) / radius;
-            return Some(Hit{t:temp, p:p, normal:normal, material:material})
+            return Some(Hit {
+                t: temp,
+                p: p,
+                normal: normal,
+                material: material,
+            });
         }
-        let temp = (-b + (b*b-a*c).sqrt()) / a;
+        let temp = (-b + (b * b - a * c).sqrt()) / a;
         if temp < t_max && temp > t_min {
             let p = r.point_at_parameter(temp);
             let normal = (p.clone() - *center) / radius;
-            return Some(Hit{t:temp, p:p, normal:normal, material:material})
+            return Some(Hit {
+                t: temp,
+                p: p,
+                normal: normal,
+                material: material,
+            });
         }
     }
-    return None
+    return None;
 }
 
-fn surrounding_box(a: &BoundingBox, b: & BoundingBox) -> BoundingBox {
+fn surrounding_box(a: &BoundingBox, b: &BoundingBox) -> BoundingBox {
     let p1 = Point {
         x: a.point1.x.min(b.point1.x),
         y: a.point1.y.min(b.point1.y),
@@ -42,7 +58,10 @@ fn surrounding_box(a: &BoundingBox, b: & BoundingBox) -> BoundingBox {
         y: a.point2.y.max(b.point2.y),
         z: a.point2.z.max(b.point2.z),
     };
-    BoundingBox{point1:p1, point2:p2}
+    BoundingBox {
+        point1: p1,
+        point2: p2,
+    }
 }
 
 pub struct Hit<'a> {
@@ -54,7 +73,7 @@ pub struct Hit<'a> {
 
 pub trait Hittable {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit>;
-    fn bounding_box(&self) -> BoundingBox; 
+    fn bounding_box(&self) -> BoundingBox;
 }
 
 #[derive(Clone)]
@@ -78,7 +97,6 @@ impl Hittable for SphereThing {
     }
 }
 
-
 #[derive(Clone)]
 pub struct Sphere {
     pub center: Point,
@@ -90,14 +108,17 @@ impl Hittable for Sphere {
         hit(r, t_min, t_max, self.radius, &self.material, &self.center)
     }
     fn bounding_box(&self) -> BoundingBox {
-        let radius = Point{x:self.radius, y: self.radius, z:self.radius};
-        BoundingBox{
+        let radius = Point {
+            x: self.radius,
+            y: self.radius,
+            z: self.radius,
+        };
+        BoundingBox {
             point1: self.center - radius,
             point2: self.center + radius,
         }
     }
 }
-
 
 #[derive(Clone)]
 pub struct SphereMoving {
@@ -111,7 +132,14 @@ pub struct SphereMoving {
 
 impl Hittable for SphereMoving {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
-        hit(r, t_min, t_max, self.radius, &self.material, &self.get_center(&r.time))
+        hit(
+            r,
+            t_min,
+            t_max,
+            self.radius,
+            &self.material,
+            &self.get_center(&r.time),
+        )
     }
     fn bounding_box(&self) -> BoundingBox {
         let point1 = Point {
@@ -131,13 +159,13 @@ impl Hittable for SphereMoving {
     }
 }
 
-impl SphereMoving{
-    fn get_center(&self, time : &f32) -> Point {
+impl SphereMoving {
+    fn get_center(&self, time: &f32) -> Point {
         if self.time0 == self.time1 {
-            return self.center0.clone()
+            return self.center0.clone();
         } else {
             let t_diff = (time - self.time0) / (self.time1 - self.time0);
-            return self.center0 + ((self.center1 - self.center0) * t_diff)
+            return self.center0 + ((self.center1 - self.center0) * t_diff);
         }
     }
 }
@@ -153,7 +181,6 @@ impl SphereList {
         panic!("do not call bounding_box on spherelist!")
     }
 }
-
 
 #[derive(Clone)]
 pub enum BvhBox {
@@ -185,46 +212,51 @@ pub struct PossibleHit<'a> {
 
 impl BvhNode {
     pub fn hit<'a>(&self, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
-        match self.boxx.hit(r)  {
+        match self.boxx.hit(r) {
             Some(rr) => {
                 return Some(PossibleHit {
                     boxx: the_enum,
                     t: rr,
                 })
-            },
-            None => { return None },
+            }
+            None => return None,
         }
     }
 }
 impl BvhLeaf {
     pub fn hit<'a>(&self, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
-        match self.boxx.hit(r)  {
+        match self.boxx.hit(r) {
             Some(rr) => {
                 return Some(PossibleHit {
                     boxx: the_enum,
                     t: rr,
                 })
-            },
-            None => { return None },
+            }
+            None => return None,
         }
     }
 }
 
 fn unpack_dig<'a>(a: Option<Hit<'a>>, b: Option<Hit<'a>>) -> Option<Hit<'a>> {
-    match(a, b) {
+    match (a, b) {
         (Some(l), Some(r)) => {
             if l.t < r.t {
                 return Some(l);
             } else {
                 return Some(r);
             }
-        },
-        (Some(l), None) => { return Some(l);},
-        (None, Some(r)) => { return Some(r);},
-        (None, None) => { return None; },
+        }
+        (Some(l), None) => {
+            return Some(l);
+        }
+        (None, Some(r)) => {
+            return Some(r);
+        }
+        (None, None) => {
+            return None;
+        }
     }
 }
-
 
 impl BvhBox {
     fn hit(&self, r: &Ray) -> Option<PossibleHit> {
@@ -239,17 +271,17 @@ impl BvhBox {
             BvhBox::Leaf(leaf) => {
                 let the_hit = leaf.has_a.hit(r, 0.0001, f32::MAX);
                 match the_hit {
-                    Some(h) => { return Some(h) }
-                    None => { return None },
+                    Some(h) => return Some(h),
+                    None => return None,
                 }
-            },
+            }
             BvhBox::Node(node) => {
                 let left_hit = node.left.hit(r);
                 let right_hit = node.right.hit(r);
 
                 if left_hit.is_some() && right_hit.is_some() {
-                    let left_hit_t = left_hit.as_ref().unwrap().t; 
-                    let right_hit_t = right_hit.as_ref().unwrap().t; 
+                    let left_hit_t = left_hit.as_ref().unwrap().t;
+                    let right_hit_t = right_hit.as_ref().unwrap().t;
                     if left_hit_t < right_hit_t {
                         let left_dig = left_hit.as_ref().unwrap().boxx.dig(r);
                         if left_dig.is_some() && left_dig.as_ref().unwrap().t < right_hit_t {
@@ -267,29 +299,26 @@ impl BvhBox {
                             return unpack_dig(left_dig, right_dig);
                         }
                     }
-                } 
-                else if left_hit.is_some() {
+                } else if left_hit.is_some() {
                     return left_hit.as_ref().unwrap().boxx.dig(r);
                 } else if right_hit.is_some() {
                     return right_hit.as_ref().unwrap().boxx.dig(r);
                 }
-            },
+            }
         };
-        return None
+        return None;
     }
     pub fn get_box(&self) -> &BoundingBox {
         match self {
-            BvhBox::Leaf(leaf) => { leaf.get_box() }
-            BvhBox::Node(node) => {
-                return &node.boxx
-            }
+            BvhBox::Leaf(leaf) => leaf.get_box(),
+            BvhBox::Node(node) => return &node.boxx,
         }
     }
 }
 //# nasty duplication:
 impl BvhLeaf {
     pub fn get_box(&self) -> &BoundingBox {
-        return &self.boxx
+        return &self.boxx;
     }
 }
 
@@ -297,39 +326,40 @@ pub fn get_bvh_box2(spheres: Vec<SphereThing>) -> BvhBox {
     let mut bounds = vec![];
     for a in spheres {
         let mut b = a.bounding_box();
-        bounds.push(BvhLeaf{
-            boxx: b,
-            has_a: a,
-        });
+        bounds.push(BvhLeaf { boxx: b, has_a: a });
     }
     get_bvh_box(&mut bounds)
 }
 
 pub fn get_bvh_box<'a>(spheres: &'a mut [BvhLeaf]) -> BvhBox {
-    let axis :i32 = (random::<f32>() * 3.0) as i32;
+    let axis: i32 = (random::<f32>() * 3.0) as i32;
 
     spheres.sort_by(|a, b| {
-        a.get_box().point1.nth(axis).partial_cmp(&b.get_box().point1.nth(axis)).unwrap_or(Equal)
+        a.get_box()
+            .point1
+            .nth(axis)
+            .partial_cmp(&b.get_box().point1.nth(axis))
+            .unwrap_or(Equal)
     });
     if spheres.len() == 1 {
-        return BvhBox::Leaf(spheres[0].clone())
+        return BvhBox::Leaf(spheres[0].clone());
     } else if spheres.len() == 2 {
         let boxx = surrounding_box(spheres[0].get_box(), spheres[1].get_box());
-        return BvhBox::Node(BvhNode{
-            left: Box::new(BvhBox::Leaf(spheres[0].clone())), 
+        return BvhBox::Node(BvhNode {
+            left: Box::new(BvhBox::Leaf(spheres[0].clone())),
             right: Box::new(BvhBox::Leaf(spheres[1].clone())),
-            boxx: boxx, 
-        })
+            boxx: boxx,
+        });
     } else {
         let n = spheres.len();
-        let left = get_bvh_box(&mut spheres[0..n/2]);
-        let right = get_bvh_box(&mut spheres[n/2..]);
+        let left = get_bvh_box(&mut spheres[0..n / 2]);
+        let right = get_bvh_box(&mut spheres[n / 2..]);
         let boxx = surrounding_box(left.get_box(), right.get_box());
-        return BvhBox::Node(BvhNode{
+        return BvhBox::Node(BvhNode {
             left: Box::new(left),
             right: Box::new(right),
             boxx: boxx,
-        })
+        });
     }
 }
 
@@ -364,37 +394,88 @@ mod tests {
 
     #[test]
     fn test_bound_box() {
-        let a = Point{x:1.0, y:1.0, z:1.0};
-        let b = Point{x:1.1, y:-1.0, z:-1.0};
-        let bb = BoundingBox {point1:a, point2:b};
+        let a = Point {
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+        };
+        let b = Point {
+            x: 1.1,
+            y: -1.0,
+            z: -1.0,
+        };
+        let bb = BoundingBox {
+            point1: a,
+            point2: b,
+        };
         // fire ray right (hit)
-        let r_hit = Ray{
-            origin: Point{x:0.0, y:0.0, z:0.0},
-            direction: Point{x:1.0, y:0.000001, z:0.000001},
+        let r_hit = Ray {
+            origin: Point {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            direction: Point {
+                x: 1.0,
+                y: 0.000001,
+                z: 0.000001,
+            },
             time: 0.0,
         };
         // Fire ray up
-        let r_miss_y = Ray{
-            origin: Point{x:0.0, y:0.0, z:0.0},
-            direction: Point{x:0.0, y:1.1, z:0.000001},
+        let r_miss_y = Ray {
+            origin: Point {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            direction: Point {
+                x: 0.0,
+                y: 1.1,
+                z: 0.000001,
+            },
             time: 0.0,
         };
         // Fire ray forwards
-        let r_miss_z = Ray{
-            origin: Point{x:0.0, y:0.0, z:0.0},
-            direction: Point{x:0.0, y:0.0, z:1.0},
+        let r_miss_z = Ray {
+            origin: Point {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            direction: Point {
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            },
             time: 0.0,
         };
         // Fire ray right but over box
-        let r_miss_x = Ray{
-            origin: Point{x:0.0, y:2.0, z:0.0},
-            direction: Point{x:1.0, y:0.0, z:1.0},
+        let r_miss_x = Ray {
+            origin: Point {
+                x: 0.0,
+                y: 2.0,
+                z: 0.0,
+            },
+            direction: Point {
+                x: 1.0,
+                y: 0.0,
+                z: 1.0,
+            },
             time: 0.0,
         };
         // Fire angled ray
-        let r_hit_funny = Ray{
-            origin: Point{x:0.0, y:2.0, z:2.0},
-            direction: Point{x:1.0, y:-2.0, z:-1.5},
+        let r_hit_funny = Ray {
+            origin: Point {
+                x: 0.0,
+                y: 2.0,
+                z: 2.0,
+            },
+            direction: Point {
+                x: 1.0,
+                y: -2.0,
+                z: -1.5,
+            },
             time: 0.0,
         };
         assert!(bb.hit(&r_hit));
