@@ -8,6 +8,6 @@ pub struct Ray {
 
 impl Ray {
     pub fn point_at_parameter(&self, t: f32) -> Point {
-        self.origin.clone() + self.direction.clone() * t
+        self.origin + self.direction * t
     }
 }

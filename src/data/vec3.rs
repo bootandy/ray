@@ -35,7 +35,7 @@ impl Color {
             b: self.b * rhs.b,
         }
     }
-    pub fn len(&self) -> f32 {
+    pub fn length(&self) -> f32 {
         len(self.r, self.g, self.b)
     }
 }
@@ -54,12 +54,12 @@ impl Point {
             z: self.x * other.y - self.y * other.x,
         }
     }
-    pub fn len(&self) -> f32 {
+    pub fn length(&self) -> f32 {
         len(self.x, self.y, self.z)
     }
 
     pub fn unit_vector(&self) -> Point {
-        let pp = self.len();
+        let pp = self.length();
         Point {
             x: self.x / pp,
             y: self.y / pp,

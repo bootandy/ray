@@ -13,7 +13,6 @@ use data::vec3::*;
 
 pub mod data;
 
-#[allow(dead_code)]
 #[macro_use]
 extern crate derive_more;
 extern crate rand;
@@ -32,23 +31,24 @@ fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
 
     match bound_box.dig(r) {
         Some(hit) => {
-            let scattered = hit.material.scatter(r, hit.normal.clone(), hit.p);
+            let scattered = hit.material.scatter(r, hit.normal, hit.p);
             if let Some(scatter_ray) = scattered {
                 let albedo = hit.material.get_albedo();
                 let c = color(&scatter_ray, bound_box, depth + 1);
-                return c.mul(albedo);
+                c.mul(albedo)
+            } else {
+                Color {
+                    r: 0.0,
+                    g: 0.0,
+                    b: 0.0,
+                }
             }
-            return Color {
-                r: 0.0,
-                g: 0.0,
-                b: 0.0,
-            };
         }
         None => {
             let ud = r.direction.unit_vector();
             let t = (ud.y + 1.0) * 0.5;
             let init_c = 1.0 - t;
-            return Color {
+            Color {
                 r: init_c,
                 g: init_c,
                 b: init_c,
@@ -56,7 +56,7 @@ fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
                 r: 0.5 * t,
                 g: 0.7 * t,
                 b: 1.0 * t,
-            };
+            }
         }
     }
 }
@@ -92,12 +92,11 @@ impl Camera {
         let offset = self.u * rd.x + self.v * rd.y;
         let end = self.origin - offset;
         let time = self.time0 + (random::<f32>() * (self.time1 - self.time0));
-        let d =
-            self.lower_left.clone() + self.horizontal.clone() * s + self.vertical.clone() * t - end;
+        let direction = self.lower_left + self.horizontal * s + self.vertical * t - end;
         Ray {
-            origin: self.origin.clone() + offset,
-            direction: d,
-            time: time,
+            origin: self.origin + offset,
+            direction,
+            time,
         }
     }
 }
@@ -109,10 +108,10 @@ fn get_camera(
     vfov: f32,
     aspect: f32,
     aperture: f32,
-    t0: f32,
-    t1: f32,
+    time0: f32,
+    time1: f32,
 ) -> Camera {
-    let focus_dist = (look_from - look_at).len();
+    let focus_dist = (look_from - look_at).length();
     let lens_radius = aperture / 2.0;
     let theta = vfov * PI / 180.0;
     let half_height = f32::tan(theta / 2.0);
@@ -127,20 +126,21 @@ fn get_camera(
     let vertical = v * (2.0 * focus_dist * half_height);
 
     Camera {
-        lower_left: lower_left,
-        horizontal: horizontal,
-        vertical: vertical,
+        lower_left,
+        horizontal,
+        vertical,
         origin: look_from,
-        lens_radius: lens_radius,
-        u: u,
-        v: v,
-        time0: t0,
-        time1: t1,
+        lens_radius,
+        u,
+        v,
+        time0,
+        time1,
     }
 }
 
+#[allow(dead_code)]
 fn get_old_spheres() -> SphereList {
-    return SphereList {
+    SphereList {
         spheres: vec![
             SphereThing::S(Sphere {
                 center: Point {
@@ -217,9 +217,10 @@ fn get_old_spheres() -> SphereList {
                 }),
             }),
         ],
-    };
+    }
 }
 
+#[allow(dead_code)]
 fn get_spheres_many() -> SphereList {
     let mut v: Vec<SphereThing> = vec![];
 
@@ -285,7 +286,7 @@ fn get_spheres_many() -> SphereList {
             };
             let sphere = match random::<f32>() {
                 x if x < 0.7 => Sphere {
-                    center: center,
+                    center,
                     radius: 0.2,
                     material: Material::Lambertian(Lambertian {
                         albedo: Color {
@@ -296,7 +297,7 @@ fn get_spheres_many() -> SphereList {
                     }),
                 },
                 x if x < 0.85 => Sphere {
-                    center: center,
+                    center,
                     radius: 0.2,
                     material: Material::Metal(Metal {
                         albedo: Color {
@@ -307,7 +308,7 @@ fn get_spheres_many() -> SphereList {
                     }),
                 },
                 _ => Sphere {
-                    center: center,
+                    center,
                     radius: 0.2,
                     material: Material::Dielectric(Dielectric {
                         reflective_index: 1.5,
@@ -318,7 +319,7 @@ fn get_spheres_many() -> SphereList {
         }
     }
 
-    return SphereList { spheres: v };
+    SphereList { spheres: v }
 }
 
 fn calc_pixel(data: &(i32, i32, &Camera), bvh_box: &mut BvhBox) -> Color {
@@ -348,7 +349,7 @@ const NS: i32 = 100;
 fn main() -> std::io::Result<()> {
     println!("Hello, world!");
     let mut buffer = File::create("out.ppm")?;
-    buffer.write(format!("P3\n{} {}\n255\n", NX, NY).as_bytes())?;
+    buffer.write_all(format!("P3\n{} {}\n255\n", NX, NY).as_bytes())?;
 
     let cam = get_camera(
         Point {
@@ -401,7 +402,7 @@ fn main() -> std::io::Result<()> {
         }).collect();
 
     for row in pixels {
-        buffer.write(row.as_color_str().as_bytes())?;
+        buffer.write_all(row.as_color_str().as_bytes())?;
     }
     buffer.flush()?;
 

@@ -18,7 +18,7 @@ fn random_in_sphere() -> Point {
 }
 
 fn reflect(v: Point, n: &Point) -> Point {
-    v.clone() - (*n * (2.0 * v.dot(&n)))
+    v - (*n * (2.0 * v.dot(&n)))
 }
 
 fn refract(v: &Point, n: Point, ni_over_nt: f32) -> Option<Point> {
@@ -26,17 +26,17 @@ fn refract(v: &Point, n: Point, ni_over_nt: f32) -> Option<Point> {
     let dt = uv.dot(&n);
     let discrim = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt);
     if discrim > 0.0 {
-        let r = (uv - (n.clone() * dt)) - (n * discrim.sqrt());
-        return Some(r * ni_over_nt);
+        let r = (uv - (n * dt)) - (n * discrim.sqrt());
+        Some(r * ni_over_nt)
     } else {
-        return None;
+        None
     }
 }
 
 fn schlick(cos: f32, ref_idx: f32) -> f32 {
     let r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
     let r0 = r0 * r0;
-    return r0 + (1.0 - r0) * (1.0 - cos).powi(5);
+    r0 + (1.0 - r0) * (1.0 - cos).powi(5)
 }
 
 #[derive(Clone)]
@@ -72,53 +72,55 @@ impl Material {
                     time: r.time,
                 };
                 if scattered.direction.dot(&normal) > 0.0 {
-                    return Some(scattered);
+                    Some(scattered)
+                } else {
+                    None
                 }
-                return None;
             }
             Material::Lambertian(_l) => {
                 let target = normal + random_in_sphere();
-                return Some(Ray {
+                Some(Ray {
                     origin: p,
                     direction: target,
                     time: r.time,
-                });
+                })
             }
             Material::Dielectric(d) => {
                 let (outward_normal, ni_over_nt, cos) = {
                     if r.direction.dot(&normal) > 0.0 {
-                        let cos = d.reflective_index * r.direction.dot(&normal) / r.direction.len();
-                        (normal.clone() * -1.0, d.reflective_index, cos)
+                        let cos =
+                            d.reflective_index * r.direction.dot(&normal) / r.direction.length();
+                        (normal * -1.0, d.reflective_index, cos)
                     } else {
-                        let cos = -r.direction.dot(&normal) / r.direction.len();
-                        (normal.clone(), 1.0 / d.reflective_index, cos)
+                        let cos = -r.direction.dot(&normal) / r.direction.length();
+                        (normal, 1.0 / d.reflective_index, cos)
                     }
                 };
                 match refract(&r.direction, outward_normal, ni_over_nt) {
                     Some(refracted) => {
                         let reflect_prob = schlick(cos, d.reflective_index);
                         if reflect_prob < random::<f32>() {
-                            let reflected = reflect(r.direction.clone(), &normal);
-                            return Some(Ray {
+                            let reflected = reflect(r.direction, &normal);
+                            Some(Ray {
                                 origin: p,
                                 direction: reflected,
                                 time: r.time,
-                            });
+                            })
                         } else {
-                            return Some(Ray {
+                            Some(Ray {
                                 origin: p,
                                 direction: refracted,
                                 time: r.time,
-                            });
+                            })
                         }
                     }
                     None => {
-                        let reflected = reflect(r.direction.clone(), &normal);
-                        return Some(Ray {
+                        let reflected = reflect(r.direction, &normal);
+                        Some(Ray {
                             origin: p,
                             direction: reflected,
                             time: r.time,
-                        });
+                        })
                     }
                 }
             }
