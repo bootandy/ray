@@ -199,8 +199,8 @@ pub struct PossibleHit<'a> {
     pub t: f32,
 }
 
-fn hit_bvh<'a>(boxx: &'a BoundingBox, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
-    match boxx.hit(r) {
+fn hit_bvh<'a>(the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
+    match the_enum.get_box().hit(r) {
         Some(rr) => Some(PossibleHit {
             boxx: the_enum,
             t: rr,
@@ -211,7 +211,7 @@ fn hit_bvh<'a>(boxx: &'a BoundingBox, the_enum: &'a BvhBox, r: &Ray) -> Option<P
 
 impl BvhNode {
     pub fn hit<'a>(&'a self, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
-        hit_bvh(&self.boxx, the_enum, r)
+        hit_bvh(the_enum, r)
     }
     pub fn dig(&self, r: &Ray) -> Option<Hit> {
         let left_hit = self.left.hit(r);
@@ -248,7 +248,7 @@ impl BvhNode {
 }
 impl BvhLeaf {
     pub fn hit<'a>(&'a self, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
-        hit_bvh(&self.boxx, the_enum, r)
+        hit_bvh(the_enum, r)
     }
     pub fn dig(&self, r: &Ray) -> Option<Hit> {
         match self.has_a.hit(r, 0.0001, f32::MAX) {
