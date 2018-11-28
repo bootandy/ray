@@ -220,6 +220,12 @@ fn get_old_spheres() -> SphereList {
     }
 }
 
+/// Remove randomness for reproducable builds when timing speed
+fn rnd() -> f32 {
+    // random::<f32>()
+    0.2
+}
+
 #[allow(dead_code)]
 fn get_spheres_many() -> SphereList {
     let mut v: Vec<SphereThing> = vec![];
@@ -280,19 +286,19 @@ fn get_spheres_many() -> SphereList {
     for a in -7..7 {
         for b in -7..7 {
             let center = Point {
-                x: a as f32 + 0.9 * random::<f32>(),
+                x: a as f32 + 0.9 * rnd(),
                 y: 0.2,
-                z: b as f32 + 0.9 * random::<f32>(),
+                z: b as f32 + 0.9 * rnd(),
             };
-            let sphere = match random::<f32>() {
+            let sphere = match rnd() {
                 x if x < 0.7 => Sphere {
                     center,
                     radius: 0.2,
                     material: Material::Lambertian(Lambertian {
                         albedo: Color {
-                            r: random(),
-                            g: random(),
-                            b: random(),
+                            r: rnd(),
+                            g: rnd(),
+                            b: rnd(),
                         },
                     }),
                 },
@@ -301,9 +307,9 @@ fn get_spheres_many() -> SphereList {
                     radius: 0.2,
                     material: Material::Metal(Metal {
                         albedo: Color {
-                            r: random(),
-                            g: random(),
-                            b: random(),
+                            r: rnd(),
+                            g: rnd(),
+                            b: rnd(),
                         },
                     }),
                 },

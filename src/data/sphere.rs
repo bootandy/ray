@@ -7,7 +7,6 @@ use Material;
 use Point;
 use Ray;
 
-//#[deny(clippy::many_single_char_names)]
 fn hit<'a>(
     r: &Ray,
     t_min: f32,
@@ -200,24 +199,60 @@ pub struct PossibleHit<'a> {
     pub t: f32,
 }
 
+fn hit_bvh<'a>(boxx: &'a BoundingBox, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
+    match boxx.hit(r) {
+        Some(rr) => Some(PossibleHit {
+            boxx: the_enum,
+            t: rr,
+        }),
+        None => None,
+    }
+}
+
 impl BvhNode {
-    pub fn hit<'a>(&self, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
-        match self.boxx.hit(r) {
-            Some(rr) => Some(PossibleHit {
-                boxx: the_enum,
-                t: rr,
-            }),
-            None => None,
+    pub fn hit<'a>(&'a self, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
+        hit_bvh(&self.boxx, the_enum, r)
+    }
+    pub fn dig(&self, r: &Ray) -> Option<Hit> {
+        let left_hit = self.left.hit(r);
+        let right_hit = self.right.hit(r);
+
+        if left_hit.is_some() && right_hit.is_some() {
+            let left_hit_t = left_hit.as_ref().unwrap().t;
+            let right_hit_t = right_hit.as_ref().unwrap().t;
+            if left_hit_t < right_hit_t {
+                let left_dig = left_hit.as_ref().unwrap().boxx.dig(r);
+                if left_dig.is_some() && left_dig.as_ref().unwrap().t < right_hit_t {
+                    left_dig
+                } else {
+                    let right_dig = right_hit.as_ref().unwrap().boxx.dig(r);
+                    unpack_dig(left_dig, right_dig)
+                }
+            } else {
+                let right_dig = right_hit.as_ref().unwrap().boxx.dig(r);
+                if right_dig.is_some() && right_dig.as_ref().unwrap().t < left_hit_t {
+                    right_dig
+                } else {
+                    let left_dig = left_hit.as_ref().unwrap().boxx.dig(r);
+                    unpack_dig(left_dig, right_dig)
+                }
+            }
+        } else if left_hit.is_some() {
+            left_hit.as_ref().unwrap().boxx.dig(r)
+        } else if right_hit.is_some() {
+            right_hit.as_ref().unwrap().boxx.dig(r)
+        } else {
+            None
         }
     }
 }
 impl BvhLeaf {
-    pub fn hit<'a>(&self, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
-        match self.boxx.hit(r) {
-            Some(rr) => Some(PossibleHit {
-                boxx: the_enum,
-                t: rr,
-            }),
+    pub fn hit<'a>(&'a self, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
+        hit_bvh(&self.boxx, the_enum, r)
+    }
+    pub fn dig(&self, r: &Ray) -> Option<Hit> {
+        match self.has_a.hit(r, 0.0001, f32::MAX) {
+            Some(h) => Some(h),
             None => None,
         }
     }
@@ -248,45 +283,8 @@ impl BvhBox {
 
     pub fn dig(&self, r: &Ray) -> Option<Hit> {
         match self {
-            BvhBox::Leaf(leaf) => {
-                let the_hit = leaf.has_a.hit(r, 0.0001, f32::MAX);
-                match the_hit {
-                    Some(h) => Some(h),
-                    None => None,
-                }
-            }
-            BvhBox::Node(node) => {
-                let left_hit = node.left.hit(r);
-                let right_hit = node.right.hit(r);
-
-                if left_hit.is_some() && right_hit.is_some() {
-                    let left_hit_t = left_hit.as_ref().unwrap().t;
-                    let right_hit_t = right_hit.as_ref().unwrap().t;
-                    if left_hit_t < right_hit_t {
-                        let left_dig = left_hit.as_ref().unwrap().boxx.dig(r);
-                        if left_dig.is_some() && left_dig.as_ref().unwrap().t < right_hit_t {
-                            left_dig
-                        } else {
-                            let right_dig = right_hit.as_ref().unwrap().boxx.dig(r);
-                            unpack_dig(left_dig, right_dig)
-                        }
-                    } else {
-                        let right_dig = right_hit.as_ref().unwrap().boxx.dig(r);
-                        if right_dig.is_some() && right_dig.as_ref().unwrap().t < left_hit_t {
-                            right_dig
-                        } else {
-                            let left_dig = left_hit.as_ref().unwrap().boxx.dig(r);
-                            unpack_dig(left_dig, right_dig)
-                        }
-                    }
-                } else if left_hit.is_some() {
-                    left_hit.as_ref().unwrap().boxx.dig(r)
-                } else if right_hit.is_some() {
-                    right_hit.as_ref().unwrap().boxx.dig(r)
-                } else {
-                    None
-                }
-            }
+            BvhBox::Leaf(leaf) => leaf.dig(r),
+            BvhBox::Node(node) => node.dig(r),
         }
     }
     pub fn get_box(&self) -> &BoundingBox {
@@ -296,7 +294,7 @@ impl BvhBox {
         }
     }
 }
-//# nasty duplication:
+
 impl BvhLeaf {
     pub fn get_box(&self) -> &BoundingBox {
         &self.boxx
