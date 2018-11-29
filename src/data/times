@@ -12,6 +12,12 @@
 # Inlined version of second gives 
 35.70s user 0.19s system 1128% cpu 3.181 total
 
+# Refactor on 2018--11-29
+34.01s user 0.13s system 1147% cpu 2.976 total
+35.66s user 0.10s system 1152% cpu 3.104 total
+36.42s user 0.14s system 1138% cpu 3.211 total
+
+
 
 
 

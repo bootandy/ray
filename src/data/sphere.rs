@@ -209,18 +209,48 @@ fn hit_bvh<'a>(the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
     }
 }
 
-fn unpack_dig<'a>(a: Option<Hit<'a>>, b: Option<Hit<'a>>) -> Option<Hit<'a>> {
-    match (a, b) {
-        (Some(l), Some(r)) => {
-            if l.t < r.t {
-                Some(l)
-            } else {
-                Some(r)
+fn get_t_or_max(hit: &Option<Hit>) -> f32 {
+    match hit {
+        Some(h) => h.t,
+        None => f32::MAX,
+    }
+}
+
+fn process_hit<'a>(hit: PossibleHit<'a>, deepest_hit: f32, r: &Ray) -> Option<Hit<'a>> {
+    if hit.t > deepest_hit {
+        None
+    } else {
+        hit.boxx.dig(r, f32::MAX)
+    }
+}
+
+fn process_double_hit<'a>(
+    hit: PossibleHit<'a>,
+    hit2: PossibleHit<'a>,
+    deepest_hit: f32,
+    r: &Ray,
+) -> Option<Hit<'a>> {
+    if hit.t > deepest_hit {
+        None
+    } else {
+        let hit_dug = hit.boxx.dig(r, f32::MAX);
+        let hit_dug_t = get_t_or_max(&hit_dug);
+        if hit_dug_t < hit2.t {
+            hit_dug
+        } else {
+            match (hit_dug, hit2.boxx.dig(r, hit_dug_t)) {
+                (Some(l), Some(r)) => {
+                    if l.t < r.t {
+                        Some(l)
+                    } else {
+                        Some(r)
+                    }
+                }
+                (Some(l), None) => Some(l),
+                (None, Some(r)) => Some(r),
+                (None, None) => None,
             }
         }
-        (Some(l), None) => Some(l),
-        (None, Some(r)) => Some(r),
-        (None, None) => None,
     }
 }
 
@@ -228,36 +258,20 @@ impl BvhNode {
     pub fn hit<'a>(&'a self, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
         hit_bvh(the_enum, r)
     }
-    pub fn dig(&self, r: &Ray) -> Option<Hit> {
+    pub fn dig(&self, r: &Ray, deepest_hit: f32) -> Option<Hit> {
         let left_hit = self.left.hit(r);
         let right_hit = self.right.hit(r);
-
-        if left_hit.is_some() && right_hit.is_some() {
-            let left_hit_t = left_hit.as_ref().unwrap().t;
-            let right_hit_t = right_hit.as_ref().unwrap().t;
-            if left_hit_t < right_hit_t {
-                let left_dig = left_hit.as_ref().unwrap().boxx.dig(r);
-                if left_dig.is_some() && left_dig.as_ref().unwrap().t < right_hit_t {
-                    left_dig
+        match (left_hit, right_hit) {
+            (Some(left), Some(right)) => {
+                if left.t < right.t {
+                    process_double_hit(left, right, deepest_hit, r)
                 } else {
-                    let right_dig = right_hit.as_ref().unwrap().boxx.dig(r);
-                    unpack_dig(left_dig, right_dig)
-                }
-            } else {
-                let right_dig = right_hit.as_ref().unwrap().boxx.dig(r);
-                if right_dig.is_some() && right_dig.as_ref().unwrap().t < left_hit_t {
-                    right_dig
-                } else {
-                    let left_dig = left_hit.as_ref().unwrap().boxx.dig(r);
-                    unpack_dig(left_dig, right_dig)
+                    process_double_hit(right, left, deepest_hit, r)
                 }
             }
-        } else if left_hit.is_some() {
-            left_hit.as_ref().unwrap().boxx.dig(r)
-        } else if right_hit.is_some() {
-            right_hit.as_ref().unwrap().boxx.dig(r)
-        } else {
-            None
+            (Some(left), None) => process_hit(left, deepest_hit, r),
+            (None, Some(right)) => process_hit(right, deepest_hit, r),
+            (None, None) => None,
         }
     }
 }
@@ -285,10 +299,10 @@ impl BvhBox {
         }
     }
 
-    pub fn dig(&self, r: &Ray) -> Option<Hit> {
+    pub fn dig(&self, r: &Ray, deepest_hit: f32) -> Option<Hit> {
         match self {
             BvhBox::Leaf(leaf) => leaf.dig(r),
-            BvhBox::Node(node) => node.dig(r),
+            BvhBox::Node(node) => node.dig(r, deepest_hit),
         }
     }
     pub fn get_box(&self) -> &BoundingBox {
@@ -298,7 +312,6 @@ impl BvhBox {
         }
     }
 }
-
 
 pub fn get_bvh_box2(spheres: Vec<SphereThing>) -> BvhBox {
     let mut bounds = vec![];

@@ -29,7 +29,7 @@ fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
         };
     }
 
-    match bound_box.dig(r) {
+    match bound_box.dig(r, f32::MAX) {
         Some(hit) => {
             let scattered = hit.material.scatter(r, hit.normal, hit.p);
             if let Some(scatter_ray) = scattered {
