@@ -209,6 +209,21 @@ fn hit_bvh<'a>(the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
     }
 }
 
+fn unpack_dig<'a>(a: Option<Hit<'a>>, b: Option<Hit<'a>>) -> Option<Hit<'a>> {
+    match (a, b) {
+        (Some(l), Some(r)) => {
+            if l.t < r.t {
+                Some(l)
+            } else {
+                Some(r)
+            }
+        }
+        (Some(l), None) => Some(l),
+        (None, Some(r)) => Some(r),
+        (None, None) => None,
+    }
+}
+
 impl BvhNode {
     pub fn hit<'a>(&'a self, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
         hit_bvh(the_enum, r)
@@ -246,6 +261,7 @@ impl BvhNode {
         }
     }
 }
+
 impl BvhLeaf {
     pub fn hit<'a>(&'a self, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
         hit_bvh(the_enum, r)
@@ -256,20 +272,8 @@ impl BvhLeaf {
             None => None,
         }
     }
-}
-
-fn unpack_dig<'a>(a: Option<Hit<'a>>, b: Option<Hit<'a>>) -> Option<Hit<'a>> {
-    match (a, b) {
-        (Some(l), Some(r)) => {
-            if l.t < r.t {
-                Some(l)
-            } else {
-                Some(r)
-            }
-        }
-        (Some(l), None) => Some(l),
-        (None, Some(r)) => Some(r),
-        (None, None) => None,
+    pub fn get_box(&self) -> &BoundingBox {
+        &self.boxx
     }
 }
 
@@ -295,11 +299,6 @@ impl BvhBox {
     }
 }
 
-impl BvhLeaf {
-    pub fn get_box(&self) -> &BoundingBox {
-        &self.boxx
-    }
-}
 
 pub fn get_bvh_box2(spheres: Vec<SphereThing>) -> BvhBox {
     let mut bounds = vec![];
