@@ -139,12 +139,8 @@ impl Hittable for SphereMoving {
 
 impl SphereMoving {
     fn get_center(&self, time: f32) -> Point {
-        if (self.time0 - self.time1).abs() < 1000.0 {
-            self.center0
-        } else {
-            let t_diff = (time - self.time0) / (self.time1 - self.time0);
-            self.center0 + ((self.center1 - self.center0) * t_diff)
-        }
+        let t_diff = (time - self.time0) / (self.time1 - self.time0);
+        self.center0 + ((self.center1 - self.center0) * t_diff)
     }
 }
 #[derive(Clone)]

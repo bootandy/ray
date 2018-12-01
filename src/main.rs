@@ -312,7 +312,7 @@ fn get_spheres_many() -> SphereList {
             };
 
             let sphere = match rnd() {
-                x if x < 0.0 => SphereThing::S(Sphere {
+                x if x < 0.8 => SphereThing::S(Sphere {
                     center,
                     radius: 0.2,
                     material,
@@ -321,7 +321,7 @@ fn get_spheres_many() -> SphereList {
                     center0: center,
                     center1: center + Point {
                         x: 0.0,
-                        y: rnd(),
+                        y: rnd()/2.0,
                         z: 0.0,
                     },
                     radius: 0.2,
