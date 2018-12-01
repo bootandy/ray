@@ -2,7 +2,7 @@ use std::f32;
 
 use std::cmp::Ordering::Equal;
 
-use rand::random;
+use rnd;
 use Material;
 use Point;
 use Ray;
@@ -323,7 +323,7 @@ pub fn get_bvh_box2(spheres: Vec<SphereThing>) -> BvhBox {
 }
 
 pub fn get_bvh_box(spheres: &mut [BvhLeaf]) -> BvhBox {
-    let axis: i32 = (random::<f32>() * 3.0) as i32;
+    let axis: i32 = (rnd() * 3.0) as i32;
 
     spheres.sort_by(|a, b| {
         a.get_box()

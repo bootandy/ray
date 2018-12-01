@@ -64,8 +64,8 @@ fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
 fn random_in_unit_disk() -> Point {
     loop {
         let p = Point {
-            x: random::<f32>() * 2.0 - 1.0,
-            y: random::<f32>() * 2.0 - 1.0,
+            x: rnd() * 2.0 - 1.0,
+            y: rnd() * 2.0 - 1.0,
             z: 0.0,
         };
         if p.dot(&p) < 1.0 {
@@ -91,7 +91,7 @@ impl Camera {
         let rd = random_in_unit_disk() * self.lens_radius;
         let offset = self.u * rd.x + self.v * rd.y;
         let end = self.origin - offset;
-        let time = self.time0 + (random::<f32>() * (self.time1 - self.time0));
+        let time = self.time0 + (rnd() * (self.time1 - self.time0));
         let direction = self.lower_left + self.horizontal * s + self.vertical * t - end;
         Ray {
             origin: self.origin + offset,
@@ -221,9 +221,9 @@ fn get_old_spheres() -> SphereList {
 }
 
 /// Remove randomness for reproducable builds when timing speed
-fn rnd() -> f32 {
-    // random::<f32>()
-    0.2
+pub fn rnd() -> f32 {
+    //random::<f32>()
+    0.4
 }
 
 #[allow(dead_code)]
@@ -339,8 +339,8 @@ fn calc_pixel(data: &(i32, i32, &Camera), bvh_box: &mut BvhBox) -> Color {
     };
 
     for _s in 0..NS {
-        let u = (i as f32 + random::<f32>()) / NX as f32;
-        let v = (j as f32 + random::<f32>()) / NY as f32;
+        let u = (i as f32 + rnd()) / NX as f32;
+        let v = (j as f32 + rnd()) / NY as f32;
 
         let ray = cam.get_ray(u, v);
         col += color(&ray, bvh_box, 0);
@@ -373,7 +373,7 @@ fn main() -> std::io::Result<()> {
             y: 1.0,
             z: 0.0,
         },
-        10.0,
+        15.0,
         NX as f32 / NY as f32,
         0.01,
         0.0,

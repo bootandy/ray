@@ -1,5 +1,5 @@
 use rand::random;
-
+use rnd;
 use Color;
 use Point;
 use Ray;
@@ -7,9 +7,9 @@ use Ray;
 fn random_in_sphere() -> Point {
     loop {
         let c = Point {
-            x: random::<f32>() * 2.0 - 1.0,
-            y: random::<f32>() * 2.0 - 1.0,
-            z: random::<f32>() * 2.0 - 1.0,
+            x: rnd() * 2.0 - 1.0,
+            y: rnd() * 2.0 - 1.0,
+            z: rnd() * 2.0 - 1.0,
         };
         if c.squared_length() <= 1.0 {
             return c;
@@ -99,7 +99,7 @@ impl Material {
                 match refract(&r.direction, outward_normal, ni_over_nt) {
                     Some(refracted) => {
                         let reflect_prob = schlick(cos, d.reflective_index);
-                        if reflect_prob < random::<f32>() {
+                        if reflect_prob < rnd() {
                             let reflected = reflect(r.direction, &normal);
                             Some(Ray {
                                 origin: p,
