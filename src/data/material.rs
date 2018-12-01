@@ -1,4 +1,3 @@
-use rand::random;
 use rnd;
 use Color;
 use Point;

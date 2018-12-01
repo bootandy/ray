@@ -10,6 +10,7 @@ use data::material::*;
 use data::ray::Ray;
 use data::sphere::*;
 use data::vec3::*;
+use data::bounding::*;
 
 pub mod data;
 
@@ -19,6 +20,13 @@ extern crate rand;
 extern crate rayon;
 //#[macro_use]
 //extern crate itertools;
+
+
+/// Remove randomness for reproducable builds when timing speed
+pub fn rnd() -> f32 {
+    random::<f32>()
+    //0.4
+}
 
 fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
     if depth >= 50 {
@@ -220,12 +228,6 @@ fn get_old_spheres() -> SphereList {
     }
 }
 
-/// Remove randomness for reproducable builds when timing speed
-pub fn rnd() -> f32 {
-    //random::<f32>()
-    0.4
-}
-
 #[allow(dead_code)]
 fn get_spheres_many() -> SphereList {
     let mut v: Vec<SphereThing> = vec![];
@@ -348,6 +350,15 @@ fn calc_pixel(data: &(i32, i32, &Camera), bvh_box: &mut BvhBox) -> Color {
     col / NS as f32
 }
 
+fn spheres_to_bounding_box(spheres: Vec<SphereThing>) -> BvhBox {
+    let mut bounds = vec![];
+    for a in spheres {
+        let mut b = a.bounding_box();
+        bounds.push(BvhLeaf { boxx: b, has_a: a });
+    }
+    get_bvh_box(&mut bounds)
+}
+
 const NX: i32 = 400;
 const NY: i32 = 200;
 const NS: i32 = 100;
@@ -379,12 +390,14 @@ fn main() -> std::io::Result<()> {
         0.0,
         1.0,
     );
+
     let spherelist = get_spheres_many();
     //let spherelist = get_old_spheres();
 
+    let bound_box = spheres_to_bounding_box(spherelist.spheres.clone());
+
     let mut to_calc = vec![];
 
-    let bound_box = get_bvh_box2(spherelist.spheres.clone());
     for j in (0..NY - 1).rev() {
         for i in 0..NX {
             to_calc.push((i, j, &cam));
