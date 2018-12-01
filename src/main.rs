@@ -6,11 +6,11 @@ use std::f32::consts::PI;
 use std::fs::File;
 use std::io::prelude::*;
 
+use data::bounding::*;
 use data::material::*;
 use data::ray::Ray;
 use data::sphere::*;
 use data::vec3::*;
-use data::bounding::*;
 
 pub mod data;
 
@@ -20,7 +20,6 @@ extern crate rand;
 extern crate rayon;
 //#[macro_use]
 //extern crate itertools;
-
 
 /// Remove randomness for reproducable builds when timing speed
 pub fn rnd() -> f32 {
@@ -292,38 +291,46 @@ fn get_spheres_many() -> SphereList {
                 y: 0.2,
                 z: b as f32 + 0.9 * rnd(),
             };
-            let sphere = match rnd() {
-                x if x < 0.7 => Sphere {
-                    center,
-                    radius: 0.2,
-                    material: Material::Lambertian(Lambertian {
-                        albedo: Color {
-                            r: rnd(),
-                            g: rnd(),
-                            b: rnd(),
-                        },
-                    }),
-                },
-                x if x < 0.85 => Sphere {
-                    center,
-                    radius: 0.2,
-                    material: Material::Metal(Metal {
-                        albedo: Color {
-                            r: rnd(),
-                            g: rnd(),
-                            b: rnd(),
-                        },
-                    }),
-                },
-                _ => Sphere {
-                    center,
-                    radius: 0.2,
-                    material: Material::Dielectric(Dielectric {
-                        reflective_index: 1.5,
-                    }),
-                },
+            let material = match rnd() {
+                x if x < 0.7 => Material::Lambertian(Lambertian {
+                    albedo: Color {
+                        r: rnd(),
+                        g: rnd(),
+                        b: rnd(),
+                    },
+                }),
+                x if x < 0.85 => Material::Metal(Metal {
+                    albedo: Color {
+                        r: rnd(),
+                        g: rnd(),
+                        b: rnd(),
+                    },
+                }),
+                _ => Material::Dielectric(Dielectric {
+                    reflective_index: 1.5,
+                }),
             };
-            v.push(SphereThing::S(sphere));
+
+            let sphere = match rnd() {
+                x if x < 0.8 => SphereThing::S(Sphere {
+                    center,
+                    radius: 0.2,
+                    material,
+                }),
+                _ => SphereThing::SM(SphereMoving {
+                    center0: center,
+                    center1: center + Point {
+                        x: 0.0,
+                        y: 1.0+rnd(),
+                        z: 0.0,
+                    },
+                    radius: 0.2,
+                    material,
+                    time0: 0.0,
+                    time1: 100.0,
+                }),
+            };
+            v.push(sphere);
         }
     }
 

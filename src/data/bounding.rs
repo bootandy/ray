@@ -1,13 +1,12 @@
-use std::f32;
 use std::cmp::Ordering::Equal;
+use std::f32;
 
 use rnd;
+use Hit;
+use Hittable;
 use Point;
 use Ray;
-use Hit;
 use SphereThing;
-use Hittable;
-
 
 #[derive(Clone)]
 pub enum BvhBox {
@@ -116,8 +115,8 @@ impl BvhNode {
         hit_bvh(the_enum, r)
     }
     pub fn dig<'a>(&'a self, r: &Ray, deepest_hit: f32) -> Option<Hit<'a>> {
-        let left_hit  : Option<PossibleHit<'a>> = self.left.hit(r);
-        let right_hit : Option<PossibleHit<'a>> = self.right.hit(r);
+        let left_hit: Option<PossibleHit<'a>> = self.left.hit(r);
+        let right_hit: Option<PossibleHit<'a>> = self.right.hit(r);
         match (left_hit, right_hit) {
             (Some(left), Some(right)) => {
                 if left.t < right.t {

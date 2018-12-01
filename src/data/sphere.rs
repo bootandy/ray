@@ -1,10 +1,9 @@
 use std::f32;
 
+use BoundingBox;
 use Material;
 use Point;
 use Ray;
-use BoundingBox;
-
 
 fn hit<'a>(
     r: &Ray,
@@ -124,12 +123,12 @@ impl Hittable for SphereMoving {
         )
     }
     fn bounding_box(&self) -> BoundingBox {
-        let point1 = Point {
+        let point2 = Point {
             x: (self.center0.x + self.radius.abs()).max(self.center1.x + self.radius.abs()),
             y: (self.center0.y + self.radius.abs()).max(self.center1.y + self.radius.abs()),
             z: (self.center0.z + self.radius.abs()).max(self.center1.z + self.radius.abs()),
         };
-        let point2 = Point {
+        let point1 = Point {
             x: (self.center0.x - self.radius.abs()).min(self.center1.x - self.radius.abs()),
             y: (self.center0.y - self.radius.abs()).min(self.center1.y - self.radius.abs()),
             z: (self.center0.z - self.radius.abs()).min(self.center1.z - self.radius.abs()),
