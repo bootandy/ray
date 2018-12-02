@@ -19,6 +19,8 @@ pub mod data;
 extern crate derive_more;
 extern crate rand;
 extern crate rayon;
+#[macro_use]
+extern crate lazy_static;
 //#[macro_use]
 //extern crate itertools;
 
@@ -175,13 +177,7 @@ fn get_old_spheres() -> SphereList {
                 },
                 radius: 100.0,
                 material: Material::Lambertian(Lambertian {
-                    texture: Texture::T(ConstantTexture {
-                        color: Color {
-                            r: 0.8,
-                            g: 0.8,
-                            b: 0.0,
-                        },
-                    }),
+                    texture: Texture::NT(build_noise()),
                 }),
             }),
             SphereThing::SM(SphereMoving {
@@ -244,7 +240,8 @@ fn get_spheres_many() -> SphereList {
         },
         radius: 1000.0,
         material: Material::Lambertian(Lambertian {
-            texture: Texture::CT(CheckeredTexture {
+            texture: Texture::NT(build_noise()),
+            /*texture: Texture::CT(CheckeredTexture {
                 color1: Color {
                     r: 0.5,
                     g: 0.5,
@@ -255,7 +252,7 @@ fn get_spheres_many() -> SphereList {
                     g: 0.9,
                     b: 0.9,
                 },
-            }),
+            }),*/
         }),
     }));
     v.push(SphereThing::S(Sphere {
@@ -412,8 +409,8 @@ fn main() -> std::io::Result<()> {
         1.0,
     );
 
-    let spherelist = get_spheres_many();
-    //let spherelist = get_old_spheres();
+    //let spherelist = get_spheres_many();
+    let spherelist = get_old_spheres();
 
     let bound_box = spheres_to_bounding_box(spherelist.spheres.clone());
 
