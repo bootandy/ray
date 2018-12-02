@@ -158,7 +158,7 @@ fn get_old_spheres() -> SphereList {
                 },
                 radius: 0.5,
                 material: Material::Lambertian(Lambertian {
-                    texture: Texture::CT(ConstantTexture {
+                    texture: Texture::T(ConstantTexture {
                         color: Color {
                             r: 0.1,
                             g: 0.2,
@@ -175,7 +175,7 @@ fn get_old_spheres() -> SphereList {
                 },
                 radius: 100.0,
                 material: Material::Lambertian(Lambertian {
-                    texture: Texture::CT(ConstantTexture {
+                    texture: Texture::T(ConstantTexture {
                         color: Color {
                             r: 0.8,
                             g: 0.8,
@@ -244,11 +244,16 @@ fn get_spheres_many() -> SphereList {
         },
         radius: 1000.0,
         material: Material::Lambertian(Lambertian {
-            texture: Texture::CT(ConstantTexture {
-                color: Color {
+            texture: Texture::CT(CheckeredTexture {
+                color1: Color {
                     r: 0.5,
                     g: 0.5,
                     b: 0.5,
+                },
+                color2: Color {
+                    r: 0.9,
+                    g: 0.9,
+                    b: 0.9,
                 },
             }),
         }),
@@ -300,7 +305,7 @@ fn get_spheres_many() -> SphereList {
             };
             let material = match rnd() {
                 x if x < 0.7 => Material::Lambertian(Lambertian {
-                    texture: Texture::CT(ConstantTexture {
+                    texture: Texture::T(ConstantTexture {
                         color: Color {
                             r: rnd(),
                             g: rnd(),
