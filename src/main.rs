@@ -10,6 +10,7 @@ use data::bounding::*;
 use data::material::*;
 use data::ray::Ray;
 use data::sphere::*;
+use data::textures::*;
 use data::vec3::*;
 
 pub mod data;
@@ -40,7 +41,7 @@ fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
         Some(hit) => {
             let scattered = hit.material.scatter(r, hit.normal, hit.p);
             if let Some(scatter_ray) = scattered {
-                let albedo = hit.material.get_albedo();
+                let albedo = hit.material.get_albedo(0.0, 0.0, &hit.p);
                 let c = color(&scatter_ray, bound_box, depth + 1);
                 c.mul(albedo)
             } else {
@@ -157,11 +158,13 @@ fn get_old_spheres() -> SphereList {
                 },
                 radius: 0.5,
                 material: Material::Lambertian(Lambertian {
-                    albedo: Color {
-                        r: 0.1,
-                        g: 0.2,
-                        b: 0.5,
-                    },
+                    texture: Texture::CT(ConstantTexture {
+                        color: Color {
+                            r: 0.1,
+                            g: 0.2,
+                            b: 0.5,
+                        },
+                    }),
                 }),
             }),
             SphereThing::S(Sphere {
@@ -172,11 +175,13 @@ fn get_old_spheres() -> SphereList {
                 },
                 radius: 100.0,
                 material: Material::Lambertian(Lambertian {
-                    albedo: Color {
-                        r: 0.8,
-                        g: 0.8,
-                        b: 0.0,
-                    },
+                    texture: Texture::CT(ConstantTexture {
+                        color: Color {
+                            r: 0.8,
+                            g: 0.8,
+                            b: 0.0,
+                        },
+                    }),
                 }),
             }),
             SphereThing::SM(SphereMoving {
@@ -239,11 +244,13 @@ fn get_spheres_many() -> SphereList {
         },
         radius: 1000.0,
         material: Material::Lambertian(Lambertian {
-            albedo: Color {
-                r: 0.5,
-                g: 0.5,
-                b: 0.5,
-            },
+            texture: Texture::CT(ConstantTexture {
+                color: Color {
+                    r: 0.5,
+                    g: 0.5,
+                    b: 0.5,
+                },
+            }),
         }),
     }));
     v.push(SphereThing::S(Sphere {
@@ -293,11 +300,13 @@ fn get_spheres_many() -> SphereList {
             };
             let material = match rnd() {
                 x if x < 0.7 => Material::Lambertian(Lambertian {
-                    albedo: Color {
-                        r: rnd(),
-                        g: rnd(),
-                        b: rnd(),
-                    },
+                    texture: Texture::CT(ConstantTexture {
+                        color: Color {
+                            r: rnd(),
+                            g: rnd(),
+                            b: rnd(),
+                        },
+                    }),
                 }),
                 x if x < 0.85 => Material::Metal(Metal {
                     albedo: Color {
@@ -321,7 +330,7 @@ fn get_spheres_many() -> SphereList {
                     center0: center,
                     center1: center + Point {
                         x: 0.0,
-                        y: rnd()/2.0,
+                        y: rnd() / 2.0,
                         z: 0.0,
                     },
                     radius: 0.2,

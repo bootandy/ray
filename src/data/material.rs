@@ -2,6 +2,7 @@ use rnd;
 use Color;
 use Point;
 use Ray;
+use Texture;
 
 fn random_in_sphere() -> Point {
     loop {
@@ -44,7 +45,7 @@ pub struct Metal {
 }
 #[derive(Clone)]
 pub struct Lambertian {
-    pub albedo: Color,
+    pub texture: Texture,
 }
 #[derive(Clone)]
 pub struct Dielectric {
@@ -126,10 +127,10 @@ impl Material {
         }
     }
 
-    pub fn get_albedo(&self) -> &Color {
+    pub fn get_albedo(&self, u: f32, v: f32, p: &Point) -> &Color {
         match self {
             Material::Metal(metal) => &metal.albedo,
-            Material::Lambertian(l) => &l.albedo,
+            Material::Lambertian(l) => l.texture.value(0.0, 0.0, p),
             Material::Dielectric(_) => &Color {
                 r: 1.0,
                 g: 1.0,
