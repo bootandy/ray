@@ -43,9 +43,9 @@ fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
         Some(hit) => {
             let scattered = hit.material.scatter(r, hit.normal, hit.p);
             if let Some(scatter_ray) = scattered {
-                let albedo = hit.material.get_albedo(0.0, 0.0, &hit.p);
+                let albedo = hit.material.get_albedo(&hit.p);
                 let c = color(&scatter_ray, bound_box, depth + 1);
-                c.mul(albedo)
+                c.mul(&albedo)
             } else {
                 Color {
                     r: 0.0,

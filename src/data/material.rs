@@ -3,6 +3,7 @@ use Color;
 use Point;
 use Ray;
 use Texture;
+use PURE_COLOR;
 
 fn random_in_sphere() -> Point {
     loop {
@@ -127,15 +128,11 @@ impl Material {
         }
     }
 
-    pub fn get_albedo(&self, u: f32, v: f32, p: &Point) -> &Color {
+    pub fn get_albedo(&self, p: &Point) -> Color {
         match self {
-            Material::Metal(metal) => &metal.albedo,
-            Material::Lambertian(l) => l.texture.value(0.0, 0.0, p),
-            Material::Dielectric(_) => &Color {
-                r: 1.0,
-                g: 1.0,
-                b: 1.0,
-            },
+            Material::Metal(metal) => metal.albedo,
+            Material::Lambertian(l) => l.texture.value(p),
+            Material::Dielectric(_) => PURE_COLOR,
         }
     }
 }

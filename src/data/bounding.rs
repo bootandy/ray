@@ -316,10 +316,10 @@ mod tests {
             },
             time: 0.0,
         };
-        assert!(bb.hit(&r_hit));
-        assert!(!bb.hit(&r_miss_y));
-        assert!(!bb.hit(&r_miss_z));
-        assert!(!bb.hit(&r_miss_x));
-        assert!(bb.hit(&r_hit_funny));
+        assert!(bb.hit(&r_hit).is_some());
+        assert!(bb.hit(&r_miss_y).is_none());
+        assert!(bb.hit(&r_miss_z).is_none());
+        assert!(bb.hit(&r_miss_x).is_none());
+        assert!(bb.hit(&r_hit_funny).is_some());
     }
 }
