@@ -69,9 +69,6 @@ impl NoiseTexture {
         self.noise(p)
     }
     fn noise(&self, p: &Point) -> Color {
-        //let i = ((4.0 * p.x) as u8) as usize;
-        //let j = ((4.0 * p.y) as u8) as usize;
-        //let k = ((4.0 * p.z) as u8) as usize;
         let i = p.x.floor() as usize;
         let j = p.y.floor() as usize;
         let k = p.z.floor() as usize;
@@ -93,9 +90,13 @@ impl NoiseTexture {
     }
 
     fn trilinear_int(&self, c: [[[u8; 2]; 2]; 2], p: &Point) -> f32 {
-        let u = p.x - p.x.floor();
-        let v = p.y - p.y.floor();
-        let w = p.z - p.z.floor();
+        let u2 = p.x - p.x.floor();
+        let v2 = p.y - p.y.floor();
+        let w2 = p.z - p.z.floor();
+        let u = u2 * u2 * (3.0 - 2.0 * u2);
+        let v = v2 * v2 * (3.0 - 2.0 * v2);
+        let w = w2 * w2 * (3.0 - 2.0 * w2);
+
         let mut accom : u8 = 0;
         for i in 0..2 {
             for j in 0..2 {
