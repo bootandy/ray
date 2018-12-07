@@ -38,6 +38,13 @@ impl Color {
     pub fn length(&self) -> f32 {
         len(self.r, self.g, self.b)
     }
+    pub fn abs(&self) -> Color {
+        Color {
+            r: self.r.abs(),
+            g: self.g.abs(),
+            b: self.b.abs(),
+        }
+    }
 }
 
 impl Point {
