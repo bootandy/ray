@@ -128,10 +128,10 @@ impl Material {
         }
     }
 
-    pub fn get_albedo(&self, p: &Point) -> Color {
+    pub fn get_albedo(&self, p: &Point, u: f32, v: f32) -> Color {
         match self {
             Material::Metal(metal) => metal.albedo,
-            Material::Lambertian(l) => l.texture.value(p),
+            Material::Lambertian(l) => l.texture.value(p, u, v),
             Material::Dielectric(_) => PURE_COLOR,
         }
     }

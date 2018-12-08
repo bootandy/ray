@@ -1,3 +1,5 @@
+use image::DynamicImage;
+use image::GenericImageView;
 use rnd;
 use Color;
 use Point;
@@ -44,9 +46,6 @@ fn build_static_perm() -> [u8; 256] {
     for i in (0..256).rev() {
         let target = (rnd() * i as f32) as usize;
         result.swap(i, target);
-        /*let tmp = result[i];
-        result[i] = result[target];
-        result[target] = tmp;*/
     }
     result
 }
@@ -65,18 +64,19 @@ pub fn build_noise() -> NoiseTexture {
         };
         ran_float[i] = p.unit_vector();
     }
-    NoiseTexture { ran_float }
+    let scale = rnd();
+    NoiseTexture { ran_float, scale }
 }
 
 #[derive(Clone, Copy)]
 pub struct NoiseTexture {
-    pub ran_float: [Point; 256],
+    ran_float: [Point; 256],
+    scale: f32,
 }
 
 impl NoiseTexture {
     pub fn value(&self, p: &Point) -> Color {
-        let scale = 0.08;
-        let c = ((self.turb(p) * 10.0) + p.y * scale).sin() * 0.5;
+        let c = ((self.turb(p) * 10.0) + p.y * self.scale).sin() * 0.5;
         Color { r: c, g: c, b: c }
     }
 
@@ -141,23 +141,50 @@ impl NoiseTexture {
             }
         }
         accom
-        //accom as f32 / 256.0
     }
 }
 
-#[derive(Clone, Copy)]
+pub fn build_image_texture() -> ImageTexture {
+    let img = image::open("./earth.jpeg").unwrap();
+    println!("{:?}", img.dimensions());
+    ImageTexture { img: Box::new(img) }
+}
+
+#[derive(Clone)]
+pub struct ImageTexture {
+    pub img: Box<DynamicImage>,
+}
+
+impl ImageTexture {
+    pub fn value(&self, p: &Point, u: f32, v: f32) -> Color {
+        let (width, height) = self.img.dimensions();
+        let x_pixel = (u) * width as f32;
+        let y_pixel = (1.0 - v) * height as f32;
+        let pixel = self.img.get_pixel(x_pixel as u32, y_pixel as u32);
+        let colors = pixel.data;
+        Color {
+            r: colors[0] as f32 / 255.0,
+            b: colors[2] as f32 / 255.0,
+            g: colors[1] as f32 / 255.0,
+        }
+    }
+}
+
+#[derive(Clone)]
 pub enum Texture {
     T(ConstantTexture),
     CT(CheckeredTexture),
     NT(NoiseTexture),
+    IT(ImageTexture),
 }
 
 impl Texture {
-    pub fn value(&self, p: &Point) -> Color {
+    pub fn value(&self, p: &Point, u: f32, v: f32) -> Color {
         match self {
             Texture::T(t) => t.value(),
             Texture::CT(ct) => ct.value(p),
             Texture::NT(nt) => nt.value(p),
+            Texture::IT(it) => it.value(p, u, v),
         }
     }
 }
@@ -185,7 +212,6 @@ mod tests {
                 y: 10.5 - i as f32 / 300.0,
                 z: 0.5,
             });
-            println!("{:?}", a);
         }
     }
 }

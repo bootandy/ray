@@ -1,4 +1,5 @@
 use std::f32;
+use std::f32::consts::PI;
 
 use BoundingBox;
 use Material;
@@ -23,9 +24,12 @@ fn hit<'a>(
         if temp < t_max && temp > t_min {
             let point = r.point_at_parameter(temp);
             let normal = (point - *center) / radius;
+            let (u, v) = get_sphere_uv(normal);
             return Some(Hit {
                 t: temp,
                 p: point,
+                u,
+                v,
                 normal,
                 material,
             });
@@ -34,9 +38,12 @@ fn hit<'a>(
         if temp < t_max && temp > t_min {
             let point = r.point_at_parameter(temp);
             let normal = (point - *center) / radius;
+            let (u, v) = get_sphere_uv(normal);
             return Some(Hit {
                 t: temp,
                 p: point,
+                u,
+                v,
                 normal,
                 material,
             });
@@ -45,9 +52,25 @@ fn hit<'a>(
     None
 }
 
+fn get_sphere_uv(p: Point) -> (f32, f32) {
+    assert!(p.z <= 1.0);
+    assert!(p.z >= -1.0);
+    assert!(p.x <= 1.0);
+    assert!(p.x >= -1.0);
+    assert!(p.y <= 1.0);
+    assert!(p.y >= -1.0);
+    let phi = p.z.atan2(p.x);
+    let theta = p.y.asin();
+    let u = 1.0 - (phi + PI) / (2.0 * PI);
+    let v = (theta + PI / 2.0) / PI;
+    (u, v)
+}
+
 pub struct Hit<'a> {
     pub t: f32,
     pub p: Point,
+    pub u: f32,
+    pub v: f32,
     pub normal: Point,
     pub material: &'a Material,
 }

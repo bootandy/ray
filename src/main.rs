@@ -17,8 +17,10 @@ pub mod data;
 
 #[macro_use]
 extern crate derive_more;
+extern crate image;
 extern crate rand;
 extern crate rayon;
+
 #[macro_use]
 extern crate lazy_static;
 //#[macro_use]
@@ -43,7 +45,7 @@ fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
         Some(hit) => {
             let scattered = hit.material.scatter(r, hit.normal, hit.p);
             if let Some(scatter_ray) = scattered {
-                let albedo = hit.material.get_albedo(&hit.p);
+                let albedo = hit.material.get_albedo(&hit.p, hit.u, hit.v);
                 let c = color(&scatter_ray, bound_box, depth + 1);
                 c.mul(&albedo)
             } else {
@@ -155,21 +157,22 @@ fn get_old_spheres() -> SphereList {
             SphereThing::S(Sphere {
                 center: Point {
                     x: 3.0,
-                    y: 0.0,
+                    y: 0.8,
                     z: 0.5,
                 },
-                radius: 0.5,
+                radius: 1.5,
                 material: Material::Lambertian(Lambertian {
-                    texture: Texture::T(ConstantTexture {
+                    texture: Texture::IT(build_image_texture()),
+                    /*texture: Texture::T(ConstantTexture {
                         color: Color {
                             r: 0.1,
                             g: 0.2,
                             b: 0.5,
                         },
-                    }),
+                    }),*/
                 }),
             }),
-            SphereThing::S(Sphere {
+            /*            SphereThing::S(Sphere {
                 center: Point {
                     x: 0.0,
                     y: -100.5,
@@ -177,7 +180,8 @@ fn get_old_spheres() -> SphereList {
                 },
                 radius: 100.0,
                 material: Material::Lambertian(Lambertian {
-                    texture: Texture::NT(build_noise()),
+                    //texture: Texture::NT(build_noise()),
+                    texture: Texture::IT(build_image_texture()),
                 }),
             }),
             SphereThing::SM(SphereMoving {
@@ -223,7 +227,7 @@ fn get_old_spheres() -> SphereList {
                 material: Material::Dielectric(Dielectric {
                     reflective_index: 1.5,
                 }),
-            }),
+            }),*/
         ],
     }
 }
@@ -241,18 +245,6 @@ fn get_spheres_many() -> SphereList {
         radius: 1000.0,
         material: Material::Lambertian(Lambertian {
             texture: Texture::NT(build_noise()),
-            /*texture: Texture::CT(CheckeredTexture {
-                color1: Color {
-                    r: 0.5,
-                    g: 0.5,
-                    b: 0.5,
-                },
-                color2: Color {
-                    r: 0.9,
-                    g: 0.9,
-                    b: 0.9,
-                },
-            }),*/
         }),
     }));
     v.push(SphereThing::S(Sphere {
@@ -323,7 +315,8 @@ fn get_spheres_many() -> SphereList {
             };
 
             let sphere = match rnd() {
-                x if x < 0.8 => SphereThing::S(Sphere {
+                // Lets not have moving spheres
+                x if x < 1.8 => SphereThing::S(Sphere {
                     center,
                     radius: 0.2,
                     material,
@@ -377,9 +370,9 @@ fn spheres_to_bounding_box(spheres: Vec<SphereThing>) -> BvhBox {
     get_bvh_box(&mut bounds)
 }
 
-const NX: i32 = 400;
-const NY: i32 = 200;
-const NS: i32 = 100;
+const NX: i32 = 800;
+const NY: i32 = 400;
+const NS: i32 = 1;
 
 fn main() -> std::io::Result<()> {
     println!("Hello, world!");
