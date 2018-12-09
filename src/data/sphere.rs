@@ -53,17 +53,17 @@ fn hit<'a>(
 }
 
 fn get_sphere_uv(p: Point) -> (f32, f32) {
-    assert!(p.z <= 1.0);
-    assert!(p.z >= -1.0);
-    assert!(p.x <= 1.0);
-    assert!(p.x >= -1.0);
-    assert!(p.y <= 1.0);
-    assert!(p.y >= -1.0);
-    let phi = p.z.atan2(p.x);
-    let theta = p.y.asin();
+    let phi = limit_value_for_trig(p.z).atan2(limit_value_for_trig(p.x));
+    let theta = limit_value_for_trig(p.y).asin();
+    assert!(!phi.is_nan());
+    assert!(!theta.is_nan());
     let u = 1.0 - (phi + PI) / (2.0 * PI);
     let v = (theta + PI / 2.0) / PI;
     (u, v)
+}
+
+fn limit_value_for_trig(a: f32) -> f32 {
+    a.max(-0.999).min(0.9999)
 }
 
 pub struct Hit<'a> {

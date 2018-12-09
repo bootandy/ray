@@ -4,6 +4,7 @@ use rnd;
 use Color;
 use Point;
 use PURE_COLOR;
+use std::num::Wrapping;
 
 #[derive(Clone, Copy)]
 pub struct ConstantTexture {
@@ -93,9 +94,9 @@ impl NoiseTexture {
     }
 
     fn noise(&self, p: &Point) -> f32 {
-        let i = p.x.floor() as usize;
-        let j = p.y.floor() as usize;
-        let k = p.z.floor() as usize;
+        let i = Wrapping(p.x.floor() as u8);
+        let j = Wrapping(p.y.floor() as u8);
+        let k = Wrapping(p.z.floor() as u8);
 
         let mut c = [[[Point {
             x: 0.0,
@@ -105,9 +106,9 @@ impl NoiseTexture {
         for di in 0..2 {
             for dj in 0..2 {
                 for dk in 0..2 {
-                    c[di][dj][dk] = self.ran_float[(permx[(i + di) & 255]
-                                                       ^ permy[(j + dj) & 255]
-                                                       ^ permz[(k + dk) & 255])
+                    c[di][dj][dk] = self.ran_float[(permx[(i + Wrapping(di as u8)).0 as usize]
+                                                       ^ permy[(j + Wrapping(dj as u8)).0 as usize]
+                                                       ^ permz[(k + Wrapping(dk as u8)).0 as usize])
                                                        as usize];
                 }
             }

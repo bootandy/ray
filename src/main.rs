@@ -172,7 +172,7 @@ fn get_old_spheres() -> SphereList {
                     }),*/
                 }),
             }),
-            /*            SphereThing::S(Sphere {
+            SphereThing::S(Sphere {
                 center: Point {
                     x: 0.0,
                     y: -100.5,
@@ -180,8 +180,8 @@ fn get_old_spheres() -> SphereList {
                 },
                 radius: 100.0,
                 material: Material::Lambertian(Lambertian {
-                    //texture: Texture::NT(build_noise()),
-                    texture: Texture::IT(build_image_texture()),
+                    texture: Texture::NT(build_noise()),
+                    //texture: Texture::IT(build_image_texture()),
                 }),
             }),
             SphereThing::SM(SphereMoving {
@@ -227,7 +227,7 @@ fn get_old_spheres() -> SphereList {
                 material: Material::Dielectric(Dielectric {
                     reflective_index: 1.5,
                 }),
-            }),*/
+            }),
         ],
     }
 }
@@ -372,7 +372,7 @@ fn spheres_to_bounding_box(spheres: Vec<SphereThing>) -> BvhBox {
 
 const NX: i32 = 800;
 const NY: i32 = 400;
-const NS: i32 = 1;
+const NS: i32 = 100;
 
 fn main() -> std::io::Result<()> {
     println!("Hello, world!");
