@@ -72,7 +72,7 @@ fn get_t_or_max(hit: &Option<Hit>) -> f32 {
     }
 }
 
-fn process_hit<'a>(hit: PossibleHit<'a>, deepest_hit: f32, r: &Ray) -> Option<Hit<'a>> {
+fn process_hit<'a>(hit: PossibleHit<'a>, deepest_hit: f32, r: &Ray) -> Option<Hit> {
     if hit.t > deepest_hit {
         None
     } else {
@@ -85,7 +85,7 @@ fn process_double_hit<'a>(
     hit2: PossibleHit<'a>,
     deepest_hit: f32,
     r: &Ray,
-) -> Option<Hit<'a>> {
+) -> Option<Hit> {
     if hit.t > deepest_hit {
         None
     } else {
@@ -114,7 +114,7 @@ impl BvhNode {
     pub fn hit<'a>(&'a self, the_enum: &'a BvhBox, r: &Ray) -> Option<PossibleHit<'a>> {
         hit_bvh(the_enum, r)
     }
-    pub fn dig<'a>(&'a self, r: &Ray, deepest_hit: f32) -> Option<Hit<'a>> {
+    pub fn dig<'a>(&'a self, r: &Ray, deepest_hit: f32) -> Option<Hit> {
         let left_hit: Option<PossibleHit<'a>> = self.left.hit(r);
         let right_hit: Option<PossibleHit<'a>> = self.right.hit(r);
         match (left_hit, right_hit) {

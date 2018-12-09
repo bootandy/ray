@@ -5,6 +5,7 @@ use BoundingBox;
 use Material;
 use Point;
 use Ray;
+use Color;
 
 fn hit<'a>(
     r: &Ray,
@@ -13,7 +14,7 @@ fn hit<'a>(
     radius: f32,
     material: &'a Material,
     center: &Point,
-) -> Option<Hit<'a>> {
+) -> Option<Hit> {
     let origin_less_center = r.origin - *center;
     let a = r.direction.dot(&r.direction);
     let b = origin_less_center.dot(&r.direction);
@@ -22,34 +23,40 @@ fn hit<'a>(
     if quadratic_calc > 0.0 {
         let temp = (-b - (b * b - a * c).sqrt()) / a;
         if temp < t_max && temp > t_min {
-            let point = r.point_at_parameter(temp);
-            let normal = (point - *center) / radius;
-            let (u, v) = get_sphere_uv(normal);
-            return Some(Hit {
-                t: temp,
-                p: point,
-                u,
-                v,
-                normal,
-                material,
-            });
+            return color_from_hit(r, material, center, radius, temp);
         }
         let temp = (-b + (b * b - a * c).sqrt()) / a;
         if temp < t_max && temp > t_min {
-            let point = r.point_at_parameter(temp);
-            let normal = (point - *center) / radius;
-            let (u, v) = get_sphere_uv(normal);
-            return Some(Hit {
-                t: temp,
-                p: point,
-                u,
-                v,
-                normal,
-                material,
-            });
+            return color_from_hit(r, material, center, radius, temp);
         }
     }
     None
+}
+
+fn color_from_hit<'a>(
+    r: &Ray,
+    material: &'a Material,
+    center: &Point,
+    radius: f32,
+    temp: f32,
+) -> Option<Hit> {
+
+            let point = r.point_at_parameter(temp);
+            let normal = (point - *center) / radius;
+            let (u, v) = get_sphere_uv(normal);
+    let scattered = material.scatter(r, normal, point);
+    if let Some(scattered_ray) = scattered {
+        let albedo = material.get_albedo(&point, u, v);
+        Some(Hit {
+            color: albedo,
+            scattered_ray,
+            t: temp,
+        })
+    //let c = color(&scatter_ray, bound_box, depth + 1);
+    //c.mul(&albedo)
+    } else {
+        None
+    }
 }
 
 fn get_sphere_uv(p: Point) -> (f32, f32) {
@@ -66,13 +73,10 @@ fn limit_value_for_trig(a: f32) -> f32 {
     a.max(-0.999).min(0.9999)
 }
 
-pub struct Hit<'a> {
+pub struct Hit {
+    pub color: Color,
+    pub scattered_ray: Ray,
     pub t: f32,
-    pub p: Point,
-    pub u: f32,
-    pub v: f32,
-    pub normal: Point,
-    pub material: &'a Material,
 }
 
 pub trait Hittable {

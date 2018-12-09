@@ -43,6 +43,10 @@ fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
 
     match bound_box.dig(r, f32::MAX) {
         Some(hit) => {
+            let c = color(&hit.scattered_ray, bound_box, depth + 1);
+            c.mul(&hit.color)
+        }
+        /*
             let scattered = hit.material.scatter(r, hit.normal, hit.p);
             if let Some(scatter_ray) = scattered {
                 let albedo = hit.material.get_albedo(&hit.p, hit.u, hit.v);
@@ -56,6 +60,7 @@ fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
                 }
             }
         }
+        */
         None => {
             let ud = r.direction.unit_vector();
             let t = (ud.y + 1.0) * 0.5;
@@ -210,9 +215,9 @@ fn get_old_spheres() -> SphereList {
                 center: Point {
                     x: 1.0,
                     y: 0.0,
-                    z: 1.0,
+                    z: 2.0,
                 },
-                radius: 0.5,
+                radius: 1.5,
                 material: Material::Dielectric(Dielectric {
                     reflective_index: 1.5,
                 }),
@@ -221,9 +226,9 @@ fn get_old_spheres() -> SphereList {
                 center: Point {
                     x: 1.0,
                     y: 0.0,
-                    z: 1.0,
+                    z: 2.0,
                 },
-                radius: -0.45,
+                radius: -1.45,
                 material: Material::Dielectric(Dielectric {
                     reflective_index: 1.5,
                 }),
