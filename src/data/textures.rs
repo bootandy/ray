@@ -157,7 +157,7 @@ pub struct ImageTexture {
 }
 
 impl ImageTexture {
-    pub fn value(&self, p: &Point, u: f32, v: f32) -> Color {
+    pub fn value(&self, u: f32, v: f32) -> Color {
         let (width, height) = self.img.dimensions();
         let x_pixel = (u) * width as f32;
         let y_pixel = (1.0 - v) * height as f32;
@@ -185,7 +185,7 @@ impl Texture {
             Texture::T(t) => t.value(),
             Texture::CT(ct) => ct.value(p),
             Texture::NT(nt) => nt.value(p),
-            Texture::IT(it) => it.value(p, u, v),
+            Texture::IT(it) => it.value(u, v),
         }
     }
 }
