@@ -27,8 +27,8 @@ fn refract(v: &Point, n: Point, ni_over_nt: f32) -> Option<Point> {
     let dt = uv.dot(&n);
     let discrim = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt);
     if discrim > 0.0 {
-        let r = (uv - (n * dt)) - (n * discrim.sqrt());
-        Some(r * ni_over_nt)
+        let r = (uv - (n * dt)) * ni_over_nt - (n * discrim.sqrt());
+        Some(r)
     } else {
         None
     }
