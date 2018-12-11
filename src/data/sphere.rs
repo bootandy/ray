@@ -84,6 +84,7 @@ pub trait Hittable {
 pub enum SphereThing {
     S(Sphere),
     SM(SphereMoving),
+    R(Rectangle),
 }
 
 impl Hittable for SphereThing {
@@ -91,12 +92,14 @@ impl Hittable for SphereThing {
         match self {
             SphereThing::S(s) => s.hit(r, t_min, t_max),
             SphereThing::SM(s) => s.hit(r, t_min, t_max),
+            SphereThing::R(s) => s.hit(r, t_min, t_max),
         }
     }
     fn bounding_box(&self) -> BoundingBox {
         match self {
             SphereThing::S(s) => s.bounding_box(),
             SphereThing::SM(s) => s.bounding_box(),
+            SphereThing::R(s) => s.bounding_box(),
         }
     }
 }
@@ -169,4 +172,58 @@ impl SphereMoving {
 #[derive(Clone)]
 pub struct SphereList {
     pub spheres: Vec<SphereThing>,
+}
+
+#[derive(Clone)]
+pub struct Rectangle {
+    pub x0: f32,
+    pub x1: f32,
+    pub y0: f32,
+    pub y1: f32,
+    pub k: f32,
+    pub material: Material,
+}
+
+impl Hittable for Rectangle{
+    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
+        let t = (self.k - r.origin.z) / r.direction.z;
+        if t < t_min || t > t_max {
+            return None;
+        }
+        let x = r.origin.x + (t * r.direction.x);
+        let y = r.origin.y + (t * r.direction.y);
+        if x < self.x0 || x > self.x1 || y < self.y0 || y > self.y1 {
+            return None;
+        }
+        let u = (x - self.x0) / (self.x1-self.x0);
+        let v = (y - self.y0) / (self.y1-self.y0);
+
+        let point = r.point_at_parameter(t);
+        let normal = Point{x:0.0, y:0.0, z:1.0};
+        Some(Hit {
+                t, 
+                p: point,
+                u,
+                v,
+                normal,
+                material: &self.material,
+        })
+    }
+
+    fn bounding_box(&self) -> BoundingBox {
+        let p1 = Point {
+            x: self.x0,
+            y: self.y0,
+            z: self.k - 0.0000001,
+        };
+        let p2 = Point {
+            x: self.x1,
+            y: self.y1,
+            z: self.k + 0.0000001,
+        };
+        BoundingBox {
+            point1: p1,
+            point2: p2,
+        }
+    }
 }

@@ -4,6 +4,7 @@ use Point;
 use Ray;
 use Texture;
 use PURE_COLOR;
+use NO_COLOR;
 
 fn random_in_sphere() -> Point {
     loop {
@@ -52,12 +53,17 @@ pub struct Lambertian {
 pub struct Dielectric {
     pub reflective_index: f32,
 }
+#[derive(Clone)]
+pub struct DiffuseLight {
+    pub brightness: f32,
+}
 
 #[derive(Clone)]
 pub enum Material {
     Metal(Metal),
     Lambertian(Lambertian),
     Dielectric(Dielectric),
+    DiffuseLight(DiffuseLight),
 }
 
 impl Material {
@@ -124,15 +130,27 @@ impl Material {
                         })
                     }
                 }
-            }
+            },
+            Material::DiffuseLight(dl) => None,
         }
     }
+
+    pub fn emitted(&self, p: &Point, u: f32, v: f32) -> Color {
+        match self {
+            Material::DiffuseLight(_diffuse) => {
+                //Color{r:40.0,g:40.0, b:40.0}
+                PURE_COLOR
+            },
+            _ => NO_COLOR,
+         }
+     }
 
     pub fn get_albedo(&self, p: &Point, u: f32, v: f32) -> Color {
         match self {
             Material::Metal(metal) => metal.albedo,
             Material::Lambertian(l) => l.texture.value(p, u, v),
             Material::Dielectric(_) => PURE_COLOR,
+            Material::DiffuseLight(dl) => Color{r:dl.brightness, g:dl.brightness, b:dl.brightness},
         }
     }
 }

@@ -12,6 +12,7 @@ use data::ray::Ray;
 use data::sphere::*;
 use data::textures::*;
 use data::vec3::*;
+use NO_COLOR;
 
 pub mod data;
 
@@ -23,8 +24,6 @@ extern crate rayon;
 
 #[macro_use]
 extern crate lazy_static;
-//#[macro_use]
-//extern crate itertools;
 
 /// Remove randomness for reproducable builds when timing speed
 pub fn rnd() -> f32 {
@@ -34,41 +33,25 @@ pub fn rnd() -> f32 {
 
 fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
     if depth >= 50 {
-        return Color {
-            r: 0.0,
-            g: 0.0,
-            b: 0.0,
-        };
+        return NO_COLOR;
     }
 
     match bound_box.dig(r, f32::MAX) {
         Some(hit) => {
             let scattered = hit.material.scatter(r, hit.normal, hit.p);
+            let emitted = hit.material.emitted(&hit.p, hit.u, hit.v);
+
             if let Some(scatter_ray) = scattered {
                 let albedo = hit.material.get_albedo(&hit.p, hit.u, hit.v);
                 let c = color(&scatter_ray, bound_box, depth + 1);
-                c.mul(&albedo)
+                let tmp = emitted.mul(&albedo);
+                return c + tmp
             } else {
-                Color {
-                    r: 0.0,
-                    g: 0.0,
-                    b: 0.0,
-                }
+                return emitted;
             }
-        }
+        },
         None => {
-            let ud = r.direction.unit_vector();
-            let t = (ud.y + 1.0) * 0.5;
-            let init_c = 1.0 - t;
-            Color {
-                r: init_c,
-                g: init_c,
-                b: init_c,
-            } + Color {
-                r: 0.5 * t,
-                g: 0.7 * t,
-                b: 1.0 * t,
-            }
+            return NO_COLOR;
         }
     }
 }
@@ -149,6 +132,57 @@ fn get_camera(
         time1,
     }
 }
+
+pub fn get_lights() -> SphereList {
+    SphereList {
+        spheres: vec![
+            SphereThing::S(Sphere {
+                center: Point {
+                    x: 0.0,
+                    y: -100.5,
+                    z: 0.0,
+                },
+                radius: 100.0,
+                material: Material::Lambertian(Lambertian {
+                    texture: Texture::NT(build_noise()),
+                }),
+            }),
+            SphereThing::S(Sphere {
+                center: Point {
+                    x: 0.0,
+                    y: 2.0,
+                    z: 0.0,
+                },
+                radius: 2.0,
+                material: Material::Lambertian(Lambertian {
+                    texture: Texture::NT(build_noise()),
+                }),
+            }),
+            SphereThing::S(Sphere {
+                center: Point {
+                    x: 0.0,
+                    y: 7.0,
+                    z: 0.0,
+                },
+                radius: 2.0,
+                material: Material::DiffuseLight(DiffuseLight{
+                    brightness: 40.0,
+                }),
+            }),
+            SphereThing::R(Rectangle {
+                x0: 3.0,
+                x1: 5.0,
+                y0: 1.0,
+                y1: 3.0,
+                k: -2.0,
+                material: Material::DiffuseLight(DiffuseLight{
+                    brightness: 40.0,
+                }),
+            }),
+        ],
+    }
+}
+
 
 #[allow(dead_code)]
 fn get_old_spheres() -> SphereList {
@@ -403,7 +437,8 @@ fn main() -> std::io::Result<()> {
     );
 
     //let spherelist = get_spheres_many();
-    let spherelist = get_old_spheres();
+    //let spherelist = get_old_spheres();
+    let spherelist = get_lights();
 
     let bound_box = spheres_to_bounding_box(spherelist.spheres.clone());
 
