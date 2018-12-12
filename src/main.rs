@@ -135,24 +135,92 @@ fn get_camera(
     }
 }
 
-pub fn get_light_rect() -> SphereList {
+// cornell box
+pub fn get_light_room() -> SphereList {
+    let green = Material::Lambertian(Lambertian {
+        texture: Texture::T(ConstantTexture {
+            color: Color {
+                r: 0.12,
+                g: 0.45,
+                b: 0.15,
+            },
+        }),
+    });
+    let red = Material::Lambertian(Lambertian {
+        texture: Texture::T(ConstantTexture {
+            color: Color {
+                r: 0.65,
+                g: 0.05,
+                b: 0.05,
+            },
+        }),
+    });
+    let white = Material::Lambertian(Lambertian {
+        texture: Texture::T(ConstantTexture {
+            color: Color {
+                r: 0.73,
+                g: 0.73,
+                b: 0.73,
+            },
+        }),
+    });
+    let light = Material::DiffuseLight(DiffuseLight { brightness: 15.0 });
+
     SphereList {
         spheres: vec![
-            SphereThing::R(Rectangle::new(
-                -2.0,
+            SphereThing::R(Rectangle::new_yz(
                 0.0,
+                555.0,
                 0.0,
-                4.0,
-                -2.0,
-                Material::DiffuseLight(DiffuseLight { brightness: 4.0 }),
+                555.0,
+                555.0,
+                green,
+                true,
             )),
-            SphereThing::R(Rectangle::new(
-                3.0,
-                5.0,
-                1.0,
-                3.0,
-                -2.4,
-                Material::DiffuseLight(DiffuseLight { brightness: 4.0 }),
+            SphereThing::R(Rectangle::new_yz(
+                0.0,
+                555.0,
+                0.0,
+                555.0,
+                0.0,
+                red,
+                false,
+            )),
+            SphereThing::R(Rectangle::new_xz(
+                213.0,
+                343.0,
+                227.0,
+                332.0,
+                554.0,
+                light,
+                false,
+            )),
+            SphereThing::R(Rectangle::new_xz(
+                0.0,
+                555.0,
+                0.0,
+                555.0,
+                0.0,
+                white.clone(),
+                false,
+            )),
+            SphereThing::R(Rectangle::new_xz(
+                0.0,
+                555.0,
+                0.0,
+                555.0,
+                555.0,
+                white.clone(),
+                true,
+            )),
+            SphereThing::R(Rectangle::new_xy(
+                0.0,
+                555.0,
+                0.0,
+                555.0,
+                555.0,
+                white.clone(),
+                true,
             )),
         ],
     }
@@ -192,13 +260,14 @@ pub fn get_lights() -> SphereList {
                 radius: 2.0,
                 material: Material::DiffuseLight(DiffuseLight { brightness: 8.0 }),
             }),
-            SphereThing::R(Rectangle::new(
+            SphereThing::R(Rectangle::new_xy(
                 3.0,
                 5.0,
                 0.2,
                 3.0,
                 -2.0,
                 Material::DiffuseLight(DiffuseLight { brightness: 8.0 }),
+                false,
             )),
         ],
     }
@@ -435,13 +504,13 @@ fn main() -> std::io::Result<()> {
 
     let cam = get_camera(
         Point {
-            x: 13.0,
-            y: 2.0,
-            z: 3.0,
+            x: 278.0,
+            y: 278.0,
+            z: -800.0,
         },
         Point {
-            x: 0.0,
-            y: 1.5,
+            x: 278.0,
+            y: 278.0,
             z: 0.0,
         },
         Point {
@@ -449,7 +518,7 @@ fn main() -> std::io::Result<()> {
             y: 1.0,
             z: 0.0,
         },
-        35.0,
+        40.0,
         NX as f32 / NY as f32,
         0.01,
         0.0,
@@ -458,8 +527,7 @@ fn main() -> std::io::Result<()> {
 
     //let spherelist = get_spheres_many();
     //let spherelist = get_old_spheres();
-    let spherelist = get_lights();
-    //let spherelist = get_light_rect();
+    let spherelist = get_light_room();
 
     let bound_box = spheres_to_bounding_box(spherelist.spheres.clone());
 

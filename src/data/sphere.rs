@@ -181,31 +181,132 @@ pub struct Rectangle {
     pub y0: f32,
     pub y1: f32,
     pub k: f32,
+    orientation: u8,
     pub material: Material,
+    is_flipped: bool,
 }
 
 impl Rectangle {
-    pub fn new(x0: f32, x1: f32, y0: f32, y1: f32, k: f32, material: Material) -> Rectangle {
+    pub fn new_xy(x0: f32, x1: f32, y0: f32, y1: f32, k: f32, material: Material, is_flipped: bool) -> Rectangle {
         Rectangle {
             x0: x0.min(x1),
             x1: x0.max(x1),
             y0: y0.min(y1),
             y1: y0.max(y1),
             k,
+            orientation: 0,
             material,
+            is_flipped,
+        }
+    }
+    pub fn new_xz(x0: f32, x1: f32, z0: f32, z1: f32, k: f32, material: Material, is_flipped: bool) -> Rectangle {
+        Rectangle {
+            x0: x0.min(x1),
+            x1: x0.max(x1),
+            y0: z0.min(z1),
+            y1: z0.max(z1),
+            k,
+            orientation: 1,
+            material,
+            is_flipped,
+        }
+    }
+    pub fn new_yz(y0: f32, y1: f32, z0: f32, z1: f32, k: f32, material: Material, is_flipped: bool) -> Rectangle {
+        Rectangle {
+            x0: z0.min(z1),
+            x1: z0.max(z1),
+            y0: y0.min(y1),
+            y1: y0.max(y1),
+            k,
+            orientation: 2,
+            material,
+            is_flipped,
+        }
+    }
+    // I think being clever was a very bad idea.
+    fn get_xs(&self) -> (f32, f32) {
+        match self.orientation {
+            0 => (self.x0, self.x1),
+            1 => (self.x0, self.x1),
+            2 => (self.k - 0.0001, self.k + 0.0001),
+            _ => panic!("bad orientation!"),
+        }
+    }
+    fn get_ys(&self) -> (f32, f32) {
+        match self.orientation {
+            0 => (self.y0, self.y1),
+            1 => (self.k - 0.0001, self.k + 0.0001),
+            2 => (self.y0, self.y1),
+            _ => panic!("bad orientation!"),
+        }
+    }
+    fn get_zs(&self) -> (f32, f32) {
+        match self.orientation {
+            0 => (self.k - 0.0001, self.k + 0.0001),
+            1 => (self.y0, self.y1),
+            2 => (self.x0, self.x1),
+            _ => panic!("bad orientation!"),
+        }
+    }
+    fn get_x_for(&self, p: &Point) -> f32 {
+        match self.orientation {
+            0 => p.x,
+            1 => p.x,
+            2 => p.y,
+            _ => panic!("bad orientation!"),
+        }
+    }
+    fn get_y_for(&self, p: &Point) -> f32 {
+        match self.orientation {
+            0 => p.y,
+            1 => p.z,
+            2 => p.z,
+            _ => panic!("bad orientation!"),
+        }
+    }
+    fn get_z_for(&self, p: &Point) -> f32 {
+        match self.orientation {
+            0 => p.z,
+            1 => p.y,
+            2 => p.x,
+            _ => panic!("bad orientation!"),
+        }
+    }
+    fn get_normal_for(&self) -> Point {
+        let result = match self.orientation {
+            0 => Point {
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            },
+            1 => Point {
+                x: 0.0,
+                y: 1.0,
+                z: 0.0,
+            },
+            2 => Point {
+                x: 1.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            _ => panic!("bad orientation!"),
+        };
+        if self.is_flipped {
+            result * -1.0
+        } else {
+            result
         }
     }
 }
 
 impl Hittable for Rectangle {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
-        let t = (self.k - r.origin.z) / r.direction.z;
+        let t = (self.k - self.get_z_for(&r.origin)) / self.get_z_for(&r.direction);
         if t < t_min || t > t_max {
             return None;
         }
-        let x = r.origin.x + (t * r.direction.x);
-        let y = r.origin.y + (t * r.direction.y);
-        // add to const: assert self.x0 < self.x1
+        let x = self.get_x_for(&r.origin) + (t * self.get_x_for(&r.direction));
+        let y = self.get_y_for(&r.origin) + (t * self.get_y_for(&r.direction));
         if x < self.x0 || x > self.x1 || y < self.y0 || y > self.y1 {
             return None;
         }
@@ -213,31 +314,30 @@ impl Hittable for Rectangle {
         let v = (y - self.y0) / (self.y1 - self.y0);
 
         let point = r.point_at_parameter(t);
-        let normal = Point {
-            x: 0.0,
-            y: 0.0,
-            z: 1.0,
-        };
         Some(Hit {
             t,
             p: point,
             u,
             v,
-            normal,
+            normal: self.get_normal_for(),
             material: &self.material,
         })
     }
 
     fn bounding_box(&self) -> BoundingBox {
+        let xs = self.get_xs();
+        let ys = self.get_ys();
+        let zs = self.get_zs();
+
         let p1 = Point {
-            x: self.x0.min(self.x1),
-            y: self.y0.min(self.y1),
-            z: self.k - 0.0000001,
+            x: xs.0,
+            y: ys.0,
+            z: zs.0,
         };
         let p2 = Point {
-            x: self.x1.max(self.x0),
-            y: self.y1.max(self.y0),
-            z: self.k + 0.0000001,
+            x: xs.1,
+            y: ys.1,
+            z: zs.1,
         };
         BoundingBox {
             point1: p1,
