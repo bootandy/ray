@@ -1,10 +1,10 @@
 use image::DynamicImage;
 use image::GenericImageView;
 use rnd;
+use std::num::Wrapping;
 use Color;
 use Point;
 use PURE_COLOR;
-use std::num::Wrapping;
 
 #[derive(Clone, Copy)]
 pub struct ConstantTexture {
@@ -77,7 +77,8 @@ pub struct NoiseTexture {
 
 impl NoiseTexture {
     pub fn value(&self, p: &Point) -> Color {
-        let c = ((self.turb(p) * 10.0) + p.y * self.scale).sin() * 0.5;
+        let c = ((self.turb(p) * 10.0) + p.y * self.scale).sin().max(0.0) * 0.5;
+        //println!("value of image texture {}", c);
         Color { r: c, g: c, b: c }
     }
 
@@ -147,7 +148,6 @@ impl NoiseTexture {
 
 pub fn build_image_texture() -> ImageTexture {
     let img = image::open("./earth.jpeg").unwrap();
-    println!("{:?}", img.dimensions());
     ImageTexture { img: Box::new(img) }
 }
 
@@ -157,7 +157,7 @@ pub struct ImageTexture {
 }
 
 impl ImageTexture {
-    pub fn value(&self, p: &Point, u: f32, v: f32) -> Color {
+    pub fn value(&self, _p: &Point, u: f32, v: f32) -> Color {
         let (width, height) = self.img.dimensions();
         let x_pixel = (u) * width as f32;
         let y_pixel = (1.0 - v) * height as f32;

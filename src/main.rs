@@ -40,16 +40,18 @@ fn color(r: &Ray, bound_box: &BvhBox, depth: u8) -> Color {
         Some(hit) => {
             let scattered = hit.material.scatter(r, hit.normal, hit.p);
             let emitted = hit.material.emitted(&hit.p, hit.u, hit.v);
+            /*if emitted.is_pure_light() {
+                return emitted
+            }*/
 
             if let Some(scatter_ray) = scattered {
                 let albedo = hit.material.get_albedo(&hit.p, hit.u, hit.v);
                 let c = color(&scatter_ray, bound_box, depth + 1);
-                let tmp = emitted.mul(&albedo);
-                return c + tmp
+                return emitted + c.mul(&albedo);
             } else {
                 return emitted;
             }
-        },
+        }
         None => {
             return NO_COLOR;
         }
@@ -133,13 +135,36 @@ fn get_camera(
     }
 }
 
+pub fn get_light_rect() -> SphereList {
+    SphereList {
+        spheres: vec![
+            SphereThing::R(Rectangle::new(
+                -2.0,
+                0.0,
+                0.0,
+                4.0,
+                -2.0,
+                Material::DiffuseLight(DiffuseLight { brightness: 4.0 }),
+            )),
+            SphereThing::R(Rectangle::new(
+                3.0,
+                5.0,
+                1.0,
+                3.0,
+                -2.4,
+                Material::DiffuseLight(DiffuseLight { brightness: 4.0 }),
+            )),
+        ],
+    }
+}
+
 pub fn get_lights() -> SphereList {
     SphereList {
         spheres: vec![
             SphereThing::S(Sphere {
                 center: Point {
                     x: 0.0,
-                    y: -100.5,
+                    y: -100.0,
                     z: 0.0,
                 },
                 radius: 100.0,
@@ -155,7 +180,7 @@ pub fn get_lights() -> SphereList {
                 },
                 radius: 2.0,
                 material: Material::Lambertian(Lambertian {
-                    texture: Texture::NT(build_noise()),
+                    texture: Texture::IT(build_image_texture()),
                 }),
             }),
             SphereThing::S(Sphere {
@@ -165,24 +190,19 @@ pub fn get_lights() -> SphereList {
                     z: 0.0,
                 },
                 radius: 2.0,
-                material: Material::DiffuseLight(DiffuseLight{
-                    brightness: 40.0,
-                }),
+                material: Material::DiffuseLight(DiffuseLight { brightness: 8.0 }),
             }),
-            SphereThing::R(Rectangle {
-                x0: 3.0,
-                x1: 5.0,
-                y0: 1.0,
-                y1: 3.0,
-                k: -2.0,
-                material: Material::DiffuseLight(DiffuseLight{
-                    brightness: 40.0,
-                }),
-            }),
+            SphereThing::R(Rectangle::new(
+                3.0,
+                5.0,
+                0.2,
+                3.0,
+                -2.0,
+                Material::DiffuseLight(DiffuseLight { brightness: 8.0 }),
+            )),
         ],
     }
 }
-
 
 #[allow(dead_code)]
 fn get_old_spheres() -> SphereList {
@@ -421,7 +441,7 @@ fn main() -> std::io::Result<()> {
         },
         Point {
             x: 0.0,
-            y: 0.5,
+            y: 1.5,
             z: 0.0,
         },
         Point {
@@ -429,7 +449,7 @@ fn main() -> std::io::Result<()> {
             y: 1.0,
             z: 0.0,
         },
-        15.0,
+        35.0,
         NX as f32 / NY as f32,
         0.01,
         0.0,
@@ -439,6 +459,7 @@ fn main() -> std::io::Result<()> {
     //let spherelist = get_spheres_many();
     //let spherelist = get_old_spheres();
     let spherelist = get_lights();
+    //let spherelist = get_light_rect();
 
     let bound_box = spheres_to_bounding_box(spherelist.spheres.clone());
 

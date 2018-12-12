@@ -212,13 +212,17 @@ impl BoundingBox {
         let mut tmin = f32::MIN;
         let mut tmax = f32::MAX;
         for a in 0..3 {
-            let p1 = (self.point1.nth(a) - r.origin.nth(a)) / r.direction.nth(a);
-            let p2 = (self.point2.nth(a) - r.origin.nth(a)) / r.direction.nth(a);
-            let t0 = p1.min(p2);
-            let t1 = p1.max(p2);
-            tmin = tmin.max(t0);
-            tmax = tmax.min(t1);
-            if tmax <= tmin {
+            let inv_d = 1.0 / r.direction.nth(a);
+            let t0 = (self.point1.nth(a) - r.origin.nth(a)) * inv_d;
+            let t1 = (self.point2.nth(a) - r.origin.nth(a)) * inv_d;
+            if inv_d < 0.0 {
+                tmin = if t1 > tmin { t1 } else { tmin };
+                tmax = if t0 < tmax { t0 } else { tmax };
+            } else {
+                tmin = if t0 > tmin { t0 } else { tmin };
+                tmax = if t1 < tmax { t1 } else { tmax };
+            }
+            if tmax < tmin {
                 return None;
             }
         }

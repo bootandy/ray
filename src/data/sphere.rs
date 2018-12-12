@@ -184,7 +184,20 @@ pub struct Rectangle {
     pub material: Material,
 }
 
-impl Hittable for Rectangle{
+impl Rectangle {
+    pub fn new(x0: f32, x1: f32, y0: f32, y1: f32, k: f32, material: Material) -> Rectangle {
+        Rectangle {
+            x0: x0.min(x1),
+            x1: x0.max(x1),
+            y0: y0.min(y1),
+            y1: y0.max(y1),
+            k,
+            material,
+        }
+    }
+}
+
+impl Hittable for Rectangle {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         let t = (self.k - r.origin.z) / r.direction.z;
         if t < t_min || t > t_max {
@@ -192,33 +205,38 @@ impl Hittable for Rectangle{
         }
         let x = r.origin.x + (t * r.direction.x);
         let y = r.origin.y + (t * r.direction.y);
+        // add to const: assert self.x0 < self.x1
         if x < self.x0 || x > self.x1 || y < self.y0 || y > self.y1 {
             return None;
         }
-        let u = (x - self.x0) / (self.x1-self.x0);
-        let v = (y - self.y0) / (self.y1-self.y0);
+        let u = (x - self.x0) / (self.x1 - self.x0);
+        let v = (y - self.y0) / (self.y1 - self.y0);
 
         let point = r.point_at_parameter(t);
-        let normal = Point{x:0.0, y:0.0, z:1.0};
+        let normal = Point {
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        };
         Some(Hit {
-                t, 
-                p: point,
-                u,
-                v,
-                normal,
-                material: &self.material,
+            t,
+            p: point,
+            u,
+            v,
+            normal,
+            material: &self.material,
         })
     }
 
     fn bounding_box(&self) -> BoundingBox {
         let p1 = Point {
-            x: self.x0,
-            y: self.y0,
+            x: self.x0.min(self.x1),
+            y: self.y0.min(self.y1),
             z: self.k - 0.0000001,
         };
         let p2 = Point {
-            x: self.x1,
-            y: self.y1,
+            x: self.x1.max(self.x0),
+            y: self.y1.max(self.y0),
             z: self.k + 0.0000001,
         };
         BoundingBox {

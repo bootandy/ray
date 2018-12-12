@@ -17,7 +17,7 @@ fn len(a: f32, b: f32, c: f32) -> f32 {
 }
 
 fn to_bytes(a: f32) -> u8 {
-    (255.99 * a.sqrt()) as u8
+    (255.99 * a.min(1.0).sqrt()) as u8
 }
 impl Color {
     pub fn as_color_str(&self) -> String {
@@ -44,6 +44,9 @@ impl Color {
             g: self.g.abs(),
             b: self.b.abs(),
         }
+    }
+    pub fn is_pure_light(&self) -> bool {
+        self.r >= 0.999 && self.g > 0.999 && self.b >= 0.999
     }
 }
 
