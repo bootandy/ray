@@ -186,8 +186,75 @@ pub struct Rectangle {
     is_flipped: bool,
 }
 
+pub fn new_box(p1: Point, p2: Point, material: Material) -> Vec<SphereThing> {
+    vec![
+        SphereThing::R(Rectangle::new_xy(
+            p1.x,
+            p2.x,
+            p1.y,
+            p2.y,
+            p2.z,
+            material.clone(),
+            false,
+        )),
+        SphereThing::R(Rectangle::new_xy(
+            p1.x,
+            p2.x,
+            p1.y,
+            p2.y,
+            p1.z,
+            material.clone(),
+            true,
+        )),
+        SphereThing::R(Rectangle::new_xz(
+            p1.x,
+            p2.x,
+            p1.z,
+            p2.z,
+            p2.y,
+            material.clone(),
+            false,
+        )),
+        SphereThing::R(Rectangle::new_xz(
+            p1.x,
+            p2.x,
+            p1.z,
+            p2.z,
+            p1.y,
+            material.clone(),
+            true,
+        )),
+        SphereThing::R(Rectangle::new_yz(
+            p1.y,
+            p2.y,
+            p1.z,
+            p2.z,
+            p2.x,
+            material.clone(),
+            false,
+        )),
+        SphereThing::R(Rectangle::new_yz(
+            p1.y,
+            p2.y,
+            p1.z,
+            p2.z,
+            p1.x,
+            material.clone(),
+            true,
+        )),
+    ]
+}
+
 impl Rectangle {
-    pub fn new_xy(x0: f32, x1: f32, y0: f32, y1: f32, k: f32, material: Material, is_flipped: bool) -> Rectangle {
+    pub fn new_xy(
+        x0: f32,
+        x1: f32,
+        y0: f32,
+        y1: f32,
+        k: f32,
+        material: Material,
+        is_flipped: bool,
+    ) -> Rectangle {
         Rectangle {
             x0: x0.min(x1),
             x1: x0.max(x1),
@@ -199,7 +266,15 @@ impl Rectangle {
             is_flipped,
         }
     }
-    pub fn new_xz(x0: f32, x1: f32, z0: f32, z1: f32, k: f32, material: Material, is_flipped: bool) -> Rectangle {
+    pub fn new_xz(
+        x0: f32,
+        x1: f32,
+        z0: f32,
+        z1: f32,
+        k: f32,
+        material: Material,
+        is_flipped: bool,
+    ) -> Rectangle {
         Rectangle {
             x0: x0.min(x1),
             x1: x0.max(x1),
@@ -211,7 +286,15 @@ impl Rectangle {
             is_flipped,
         }
     }
-    pub fn new_yz(y0: f32, y1: f32, z0: f32, z1: f32, k: f32, material: Material, is_flipped: bool) -> Rectangle {
+    pub fn new_yz(
+        y0: f32,
+        y1: f32,
+        z0: f32,
+        z1: f32,
+        k: f32,
+        material: Material,
+        is_flipped: bool,
+    ) -> Rectangle {
         Rectangle {
             x0: z0.min(z1),
             x1: z0.max(z1),

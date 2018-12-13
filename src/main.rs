@@ -166,64 +166,71 @@ pub fn get_light_room() -> SphereList {
     });
     let light = Material::DiffuseLight(DiffuseLight { brightness: 15.0 });
 
-    SphereList {
-        spheres: vec![
-            SphereThing::R(Rectangle::new_yz(
-                0.0,
-                555.0,
-                0.0,
-                555.0,
-                555.0,
-                green,
-                true,
-            )),
-            SphereThing::R(Rectangle::new_yz(
-                0.0,
-                555.0,
-                0.0,
-                555.0,
-                0.0,
-                red,
-                false,
-            )),
-            SphereThing::R(Rectangle::new_xz(
-                213.0,
-                343.0,
-                227.0,
-                332.0,
-                554.0,
-                light,
-                false,
-            )),
-            SphereThing::R(Rectangle::new_xz(
-                0.0,
-                555.0,
-                0.0,
-                555.0,
-                0.0,
-                white.clone(),
-                false,
-            )),
-            SphereThing::R(Rectangle::new_xz(
-                0.0,
-                555.0,
-                0.0,
-                555.0,
-                555.0,
-                white.clone(),
-                true,
-            )),
-            SphereThing::R(Rectangle::new_xy(
-                0.0,
-                555.0,
-                0.0,
-                555.0,
-                555.0,
-                white.clone(),
-                true,
-            )),
-        ],
-    }
+    let mut spheres = vec![
+        SphereThing::R(Rectangle::new_yz(
+            0.0, 555.0, 0.0, 555.0, 555.0, green, true,
+        )),
+        SphereThing::R(Rectangle::new_yz(0.0, 555.0, 0.0, 555.0, 0.0, red, false)),
+        SphereThing::R(Rectangle::new_xz(
+            213.0, 343.0, 227.0, 332.0, 554.0, light, false,
+        )),
+        SphereThing::R(Rectangle::new_xz(
+            0.0,
+            555.0,
+            0.0,
+            555.0,
+            0.0,
+            white.clone(),
+            false,
+        )),
+        SphereThing::R(Rectangle::new_xz(
+            0.0,
+            555.0,
+            0.0,
+            555.0,
+            555.0,
+            white.clone(),
+            true,
+        )),
+        SphereThing::R(Rectangle::new_xy(
+            0.0,
+            555.0,
+            0.0,
+            555.0,
+            555.0,
+            white.clone(),
+            true,
+        )),
+    ];
+
+    spheres.extend(new_box(
+        Point {
+            x: 130.0,
+            y: 0.0,
+            z: 65.0,
+        },
+        Point {
+            x: 295.0,
+            y: 165.0,
+            z: 230.0,
+        },
+        white.clone(),
+    ));
+    spheres.extend(new_box(
+        Point {
+            x: 265.0,
+            y: 0.0,
+            z: 295.0,
+        },
+        Point {
+            x: 430.0,
+            y: 330.0,
+            z: 460.0,
+        },
+        white.clone(),
+    ));
+
+    SphereList { spheres: spheres }
 }
 
 pub fn get_lights() -> SphereList {
@@ -495,7 +502,7 @@ fn spheres_to_bounding_box(spheres: Vec<SphereThing>) -> BvhBox {
 
 const NX: i32 = 800;
 const NY: i32 = 400;
-const NS: i32 = 100;
+const NS: i32 = 500;
 
 fn main() -> std::io::Result<()> {
     println!("Hello, world!");
@@ -520,7 +527,7 @@ fn main() -> std::io::Result<()> {
         },
         40.0,
         NX as f32 / NY as f32,
-        0.01,
+        0.0,
         0.0,
         1.0,
     );
