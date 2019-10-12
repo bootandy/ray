@@ -1,14 +1,13 @@
 use core::ops;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Vec3{
-    x: f32,
-    y: f32,
-    z: f32,
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
 }
 
 impl Vec3 {
-
 
     pub fn length(&self) -> f32{
         self.squared_length().sqrt()
@@ -20,13 +19,9 @@ impl Vec3 {
 
     pub fn unit_vector(self) -> Vec3 {
         let k = 1.0 / self.length();
-        self / k
-//        Vec3{
-//           x: self.x *k,
-//           y: self.y *k,
-//           z: self.z *k,
-//        }
+        self * k
     }
+
     pub fn dot(&self, rhs: &Self) -> f32 {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
@@ -36,6 +31,10 @@ impl Vec3 {
             y: - self.x * rhs.z - self.z *rhs.x,
             z: self.x * rhs.y - self.y *rhs.x,
         }
+    }
+
+    pub fn as_pixel(&self) -> String {
+        format!("{:03} {:03} {:03}\n", (self.x*255.0) as u8 , (self.y*255.0) as u8 , (self.z*255.0) as u8)
     }
 }
 
@@ -159,7 +158,11 @@ mod tests {
     #[test]
     fn test_unit_vec() {
         let a = Vec3 { x: 2.0, y: 3.0, z: 4.0 };
-        assert_eq!(a.unit_vector(), Vec3 { x: 10.770329614269007, y:16.155494421403514, z:21.540659228538015});
+        assert_eq!(
+            a.unit_vector(),
+            //Vec3 { x: 10.770329614269007, y:16.155494421403514, z:21.540659228538015});
+            Vec3 { x: 0.37139067, y: 0.557086, z: 0.74278134 }
+        );
     }
 
 }
