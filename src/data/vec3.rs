@@ -34,7 +34,7 @@ impl Vec3 {
     }
 
     pub fn as_pixel(&self) -> String {
-        format!("{:03} {:03} {:03}\n", (self.x*255.0) as u8 , (self.y*255.0) as u8 , (self.z*255.0) as u8)
+        format!("{:03} {:03} {:03}\n", (self.x*255.9) as u8 , (self.y*255.9) as u8 , (self.z*255.9) as u8)
     }
 }
 
@@ -102,6 +102,18 @@ impl ops::Mul<f32> for Vec3 {
         }
     }
 }
+
+impl ops::Add<f32> for Vec3 {
+    type Output = Vec3;
+    fn add(self, rhs: f32) -> Vec3 {
+        Vec3 {
+            x: self.x + rhs,
+            y: self.y + rhs,
+            z: self.z + rhs,
+        }
+    }
+}
+
 
 
 impl PartialEq for Vec3 {

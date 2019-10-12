@@ -8,8 +8,7 @@ pub struct Ray {
 
 
 impl Ray {
-    pub fn point_at_parameter(self, p: f32) -> Vec3 {
-
-        self.origin + self.direction * p
+    pub fn point_at_parameter(&self, p: f32) -> Vec3 {
+        self.origin.clone() + (self.direction.clone() * p)
     }
 }
