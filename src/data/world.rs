@@ -1,13 +1,12 @@
 
-use data::ray::Ray;
-use data::sphere::HittableObjects;
+use data::sphere::{HittableObjects, Hittable};
 use data::vec3::Vec3;
 use data::sphere::Sphere;
 use data::material::Lambertian;
 use data::material::Metal;
 
 
-pub fn build_world() -> HittableObjects {
+pub fn build_world<'b>() -> (HittableObjects<'b>) {
     let s = Sphere {
         center: Vec3 {
             x: 0.0,
@@ -15,7 +14,7 @@ pub fn build_world() -> HittableObjects {
             z: -1.0,
         },
         radius: 0.5,
-        material: Box::new(Lambertian {
+        material: &(Lambertian {
             albedo: Vec3 {
                 x: 0.8,
                 y: 0.3,
@@ -30,7 +29,7 @@ pub fn build_world() -> HittableObjects {
             z: -1.0,
         },
         radius: 0.5,
-        material: Box::new(Metal {
+        material: &(Metal {
             albedo: Vec3 {
                 x: 0.8,
                 y: 0.6,
@@ -45,7 +44,7 @@ pub fn build_world() -> HittableObjects {
             z: -1.0,
         },
         radius: 0.5,
-        material: Box::new(Metal {
+        material: &(Metal {
             albedo: Vec3 {
                 x: 0.8,
                 y: 0.8,
@@ -60,7 +59,7 @@ pub fn build_world() -> HittableObjects {
             z: -1.0,
         },
         radius: 100.0,
-        material: Box::new(Lambertian {
+        material: &(Lambertian {
             albedo: Vec3 {
                 x: 0.8,
                 y: 0.8,
@@ -70,7 +69,7 @@ pub fn build_world() -> HittableObjects {
     };
 
     HittableObjects {
-        objects: vec![Box::new(s), Box::new(s2), Box::new(s3), Box::new(world)],
+        objects: vec![Hittable::Sphere(s), Hittable::Sphere(s2), Hittable::Sphere(s3), Hittable::Sphere(world)],
     }
 }
 

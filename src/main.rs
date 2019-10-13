@@ -15,10 +15,20 @@ use data::world::build_world;
 
 pub mod data;
 
+// speed notes:
+// 10 & 10 take ~ 8 seconds
+// 100 & 10 ~ 90 seconds
+// Swaping Box for & in the hit record made no difference
+// Swaping Box for & in the sphere made no difference
+// Switching to use Enums in the sphere made no difference
+
+// before we did 100 & 5 in ~ 7.5 seconds
+
+
 const NX: i32 = 200;
 const NY: i32 = 100;
-const NS: i32 = 100;
-const MAX_BOUNCE: i32 = 5;
+const NS: i32 = 10;
+const MAX_BOUNCE: i32 = 10;
 
 const ORIGIN: Vec3 = Vec3 {
     x: 0.0,
@@ -38,12 +48,6 @@ const VERT: Vec3 = Vec3 {
 const LOW_LEFT: Vec3 = Vec3 {
     x: -2.0,
     y: -1.0,
-    z: -1.0,
-};
-
-const SPHERE: Vec3 = Vec3 {
-    x: 0.0,
-    y: 0.0,
     z: -1.0,
 };
 
