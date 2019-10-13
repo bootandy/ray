@@ -1,12 +1,12 @@
 use data::ray::Ray;
-use data::vec3::Vec3;
+use data::old_vec3::Point;
 use std::f32::MAX;
 use data::material::Material;
 
 pub struct HitRecord<'a> {
     pub t: f32,
-    pub p: Vec3,
-    pub normal: Vec3,
+    pub p: Point,
+    pub normal: Point,
     pub material_hit: &'a dyn Material,
 }
 
@@ -26,7 +26,7 @@ impl Hittable<'_> {
 }
 
 pub struct Sphere<'a> {
-    pub center: Vec3,
+    pub center: Point,
     pub radius: f32,
     pub material: &'a dyn Material,
 }
