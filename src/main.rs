@@ -27,8 +27,8 @@ pub mod data;
 
 const NX: i32 = 200;
 const NY: i32 = 100;
-const NS: i32 = 10;
-const MAX_BOUNCE: i32 = 10;
+const NS: i32 = 100;
+const MAX_BOUNCE: i32 = 5;
 
 const ORIGIN: Vec3 = Vec3 {
     x: 0.0,
@@ -72,10 +72,11 @@ fn color(ray: &Ray, world: &HittableObjects, max_bounce: i32) -> Vec3 {
         let hit_rec = world.hit_all(ray);
         match hit_rec {
             Some(hit) => {
-                let bounce = hit.material_hit.scatter(ray, &hit.p, &hit.normal);
+                let alb = hit.material_hit.get_albedo();
+                let bounce = hit.material_hit.scatter(ray, hit);
                 match bounce {
                     Some(scattered) => {
-                        color(&scattered, world, max_bounce - 1) * hit.material_hit.get_albedo()
+                        color(&scattered, world, max_bounce - 1) * alb
                     },
                     None => {
                         ZERO_VEC.clone()
