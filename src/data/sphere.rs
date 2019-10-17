@@ -1,7 +1,7 @@
-use data::ray::Ray;
-use data::old_vec3::Point;
-use std::f32::MAX;
 use data::material::Material;
+use data::old_vec3::Point;
+use data::ray::Ray;
+use std::f32::MAX;
 
 pub struct HitRecord<'a> {
     pub t: f32,
@@ -9,19 +9,24 @@ pub struct HitRecord<'a> {
     pub normal: Point,
     pub material_hit: &'a dyn Material,
 }
+fn is_closer_than(hr: &Option<HitRecord>, target: f32) -> bool {
+    let biggest_seen = match hr {
+        None => MAX,
+        Some(thing) => thing.t
+    };
+    target < biggest_seen && target > 0.001
+}
+
 
 pub enum Hittable<'a> {
     Sphere(Sphere<'a>),
 }
 
 impl Hittable<'_> {
-    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, closest_found: &Option<HitRecord>) -> Option<HitRecord> {
         match self {
-            Hittable::Sphere(sphere) => {
-                sphere.hit(ray, t_min, t_max)
-            }
+            Hittable::Sphere(sphere) => sphere.hit(ray, closest_found),
         }
-
     }
 }
 
@@ -31,8 +36,8 @@ pub struct Sphere<'a> {
     pub material: &'a dyn Material,
 }
 
-impl Sphere<'_>  {
-    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
+impl Sphere<'_> {
+    fn hit(&self, ray: &Ray, closest_found: &Option<HitRecord>) -> Option<HitRecord> {
         let oc = ray.origin.clone() - self.center.clone();
         let a: f32 = ray.direction.dot(&ray.direction);
         let b: f32 = 2.0 * oc.dot(&ray.direction);
@@ -43,11 +48,11 @@ impl Sphere<'_>  {
             let temp = (-b - disciminant.sqrt()) / (2.0 * a);
 
             let the_t = {
-                if temp < t_max && temp > t_min {
+                if is_closer_than(closest_found, temp) {
                     Some(temp)
                 } else {
                     let temp = (-b + disciminant.sqrt()) / (2.0 * a);
-                    if temp < t_max && temp > t_min {
+                    if is_closer_than(closest_found, temp) {
                         Some(temp)
                     } else {
                         None
@@ -55,14 +60,12 @@ impl Sphere<'_>  {
                 }
             };
             match the_t {
-                Some(t) => {
-                    Some(HitRecord {
-                        t,
-                        p: ray.point_at_parameter(t),
-                        normal: (ray.point_at_parameter(t) - self.center.clone()) / self.radius,
-                        material_hit: &*self.material,
-                    })
-                },
+                Some(t) => Some(HitRecord {
+                    t,
+                    p: ray.point_at_parameter(t),
+                    normal: (ray.point_at_parameter(t) - self.center.clone()) / self.radius,
+                    material_hit: &*self.material,
+                }),
                 None => None,
             }
         } else {
@@ -77,15 +80,12 @@ pub struct HittableObjects<'a> {
 
 impl HittableObjects<'_> {
     pub fn hit_all(&self, ray: &Ray) -> Option<HitRecord> {
-        let mut t_hit = MAX;
         let mut best = None;
 
         for o in self.objects.iter() {
-
-            match o.hit(ray, 0.001, t_hit) {
+            match o.hit(ray, &best) {
                 // change to pass ref of previously hit thing
                 Some(hr) => {
-                    t_hit = hr.t;
                     best = Some(hr);
                 }
                 None => {}
