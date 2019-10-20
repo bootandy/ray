@@ -7,7 +7,7 @@ pub struct HitRecord<'a> {
     pub t: f32,
     pub p: Point,
     pub normal: Point,
-    pub material_hit: &'a dyn Material,
+    pub material_hit: &'a Material,
 }
 fn is_closer_than(hr: &Option<HitRecord>, target: f32) -> bool {
     let biggest_seen = match hr {
@@ -18,11 +18,11 @@ fn is_closer_than(hr: &Option<HitRecord>, target: f32) -> bool {
 }
 
 
-pub enum Hittable<'a> {
-    Sphere(Sphere<'a>),
+pub enum Hittable {
+    Sphere(Sphere),
 }
 
-impl Hittable<'_> {
+impl Hittable {
     fn hit(&self, ray: &Ray, closest_found: &Option<HitRecord>) -> Option<HitRecord> {
         match self {
             Hittable::Sphere(sphere) => sphere.hit(ray, closest_found),
@@ -30,13 +30,13 @@ impl Hittable<'_> {
     }
 }
 
-pub struct Sphere<'a> {
+pub struct Sphere {
     pub center: Point,
     pub radius: f32,
-    pub material: &'a dyn Material,
+    pub material: Box<dyn Material>,
 }
 
-impl Sphere<'_> {
+impl Sphere {
     fn hit(&self, ray: &Ray, closest_found: &Option<HitRecord>) -> Option<HitRecord> {
         let oc = ray.origin.clone() - self.center.clone();
         let a: f32 = ray.direction.dot(&ray.direction);
@@ -74,11 +74,11 @@ impl Sphere<'_> {
     }
 }
 
-pub struct HittableObjects<'a> {
-    pub objects: Vec<Hittable<'a>>,
+pub struct HittableObjects {
+    pub objects: Vec<Hittable>,
 }
 
-impl HittableObjects<'_> {
+impl HittableObjects {
     pub fn hit_all(&self, ray: &Ray) -> Option<HitRecord> {
         let mut best = None;
 

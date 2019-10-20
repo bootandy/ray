@@ -15,7 +15,7 @@ use self::data::old_vec3::Color;
 use self::data::old_vec3::Point;
 use self::data::ray::Ray;
 use self::data::sphere::HittableObjects;
-use data::world::build_world;
+use data::world::*;
 use std::f32::consts::PI;
 
 pub mod data;
@@ -33,7 +33,7 @@ pub mod data;
 const NX: i32 = 200;
 const NY: i32 = 100;
 const NS: i32 = 100;
-const MAX_BOUNCE: i32 = 5;
+const MAX_BOUNCE: i32 = 50;
 
 const ORIGIN: Point = Point {
     x: 0.0,
@@ -50,7 +50,7 @@ const BLACK: Color = Color {
     g: 0.0,
     b: 0.0,
 };
-const APERTURE: f32 = 0.3;
+const APERTURE: f32 = 0.001;
 
 fn random_in_unit_disk() -> Point {
     loop {
@@ -154,9 +154,12 @@ fn main() -> std::io::Result<()> {
     println!("Hello, world!");
     let mut buffer = File::create("out.ppm")?;
     buffer.write_all(format!("P3\n{} {}\n255\n", NX, NY).as_bytes())?;
-    let world = build_world();
+
+    //let world = build_world();
+    let world = build_many();
+
     let cam = Camera::new(
-        Point{x:0.0, y: 0.0, z: 1.0},
+        Point{x:0.0, y: 3.0, z: 10.0},
         Point{x:0.0, y: 0.0, z: -1.0},
         90.0,
         NX as f32 / NY as f32,

@@ -63,9 +63,6 @@ impl Point {
             z: self.x * other.y - self.y * other.x,
         }
     }
-    //    pub fn len(&self) -> f32 {
-    //        len(self.x, self.y, self.z)
-    //    }
     pub fn len(&self) -> f32 {
         self.squared_length().sqrt()
     }
