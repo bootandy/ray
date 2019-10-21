@@ -33,7 +33,7 @@ impl Hittable {
 pub struct Sphere {
     pub center: Point,
     pub radius: f32,
-    pub material: Box<dyn Material>,
+    pub material: Material,
 }
 
 impl Sphere {
@@ -64,7 +64,7 @@ impl Sphere {
                     t,
                     p: ray.point_at_parameter(t),
                     normal: (ray.point_at_parameter(t) - self.center.clone()) / self.radius,
-                    material_hit: &*self.material,
+                    material_hit: &self.material,
                 }),
                 None => None,
             }

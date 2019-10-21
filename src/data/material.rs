@@ -4,18 +4,20 @@ use data::ray::Ray;
 use data::sphere::HitRecord;
 use rand::random;
 
-pub trait Material {
-    fn scatter(&self, ray: &Ray, hr: HitRecord) -> Option<Ray>;
-    fn get_albedo(&self) -> &Color;
-    fn box_clone(&self) -> Box<dyn Material>;
-}
+//pub trait Material {
+//    fn scatter(&self, ray: &Ray, hr: HitRecord) -> Option<Ray>;
+//    fn get_albedo(&self) -> &Color;
+//    fn box_clone(&self) -> Box<dyn Material>;
+//}
 
-impl Clone for Box<dyn Material> {
-    fn clone(&self) -> Box<dyn Material> {
-        self.box_clone()
-    }
-}
+//impl Clone for Box<dyn Material> {
+//    fn clone(&self) -> Box<dyn Material> {
+//        self.box_clone()
+//    }
+//}
 
+
+// #[derive(Send , Sync)]
 #[derive(Debug, Clone)]
 pub struct Lambertian {
     pub albedo: Color,
@@ -30,6 +32,41 @@ pub struct Metal {
 #[derive(Debug, Clone)]
 pub struct Dielectric{
     pub reflective_index: f32,
+}
+
+pub enum Material {
+    Lambertian(Lambertian),
+    Metal(Metal),
+    Dielectric(Dielectric),
+}
+
+impl Material {
+    pub fn scatter(&self, r: &Ray, hr: HitRecord) -> Option<Ray> {
+        match self {
+            Material::Metal(metal) => {
+                metal.scatter(r, hr)
+            },
+            Material::Dielectric(e) => {
+                e.scatter(r, hr)
+            },
+            Material::Lambertian(l) => {
+                l.scatter(r, hr)
+            },
+        }
+    }
+    pub fn get_albedo(&self) -> &Color {
+        match self {
+            Material::Metal(metal) => {
+                metal.get_albedo()
+            },
+            Material::Dielectric(e) => {
+                e.get_albedo()
+            },
+            Material::Lambertian(l) => {
+                l.get_albedo()
+            },
+        }
+    }
 }
 
 fn random_in_sphere() -> Point {
@@ -52,7 +89,7 @@ fn reflect(v: Point, n: &Point) -> Point {
     v - (*n * v.dot(n) * 2.0)
 }
 
-impl Material for Lambertian {
+impl Lambertian {
     fn scatter(&self, _ray: &Ray, hr: HitRecord) -> Option<Ray> {
         let target = hr.normal + random_in_sphere();
         let scattered_ray = Ray {
@@ -65,20 +102,17 @@ impl Material for Lambertian {
     fn get_albedo(&self) -> &Color {
         &self.albedo
     }
-    fn box_clone(&self) -> Box<dyn Material> {
-        Box::new((*self).clone())
-    }
 }
 
 
-impl Material for Metal {
+impl Metal {
     fn scatter(&self, ray: &Ray, hr: HitRecord) -> Option<Ray> {
-        let reflected = reflect(ray.direction.clone().unit_vector(), &hr.normal);
+        let reflected = reflect(ray.direction.clone().unit_vector(), &hr.normal) + (random_in_sphere() * self.fuzz);
 
         match reflected.dot(&hr.normal) > 0.0 {
             true => Some(Ray {
                 origin: hr.p,
-                direction: reflected + (random_in_sphere() * self.fuzz),
+                direction: reflected,
             }),
             false => None,
         }
@@ -86,9 +120,6 @@ impl Material for Metal {
 
     fn get_albedo(&self) -> &Color {
         &self.albedo
-    }
-    fn box_clone(&self) -> Box<dyn Material> {
-        Box::new((*self).clone())
     }
 }
 
@@ -102,17 +133,22 @@ impl Dielectric {
     fn refract(&self, uv: &Point, out_normal: Point, ni_over_nt: f32, cos: f32) -> Option<Point> {
         let dt = uv.dot(&out_normal);
         let discrim = 1.0 - (ni_over_nt.powi(2) * (1.0 - dt.powi(2)));
-        if discrim > 0.0 {
-            let reflect_prob = self.schlick(cos);
-            if reflect_prob > random::<f32>() {
+
+        let reflect_prob = self.schlick(cos);
+        if reflect_prob > random::<f32>() {
+            return None
+        }
+        else{
+            if discrim > 0.0 {
                 return Some(((uv.clone() - out_normal * dt) * ni_over_nt) - out_normal * discrim.sqrt());
+            } else {
+                return Some(((uv.clone() - out_normal * dt) * ni_over_nt) - out_normal * -discrim.sqrt());
             }
         }
-        return None
     }
 }
 
-impl Material for Dielectric {
+impl Dielectric {
     fn scatter(&self, ray: &Ray, hr: HitRecord) -> Option<Ray> {
 
         let part_cos = ray.direction.dot(&hr.normal) / ray.direction.len();
@@ -138,9 +174,6 @@ impl Material for Dielectric {
 
     fn get_albedo(&self) -> &Color {
         &Color{r:1.0, g:1.0, b:1.0}
-    }
-    fn box_clone(&self) -> Box<dyn Material> {
-        Box::new((*self).clone())
     }
 }
 
