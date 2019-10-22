@@ -142,10 +142,11 @@ impl Dielectric {
             if discrim > 0.0 {
                 return Some(((uv.clone() - out_normal * dt) * ni_over_nt) - out_normal * discrim.sqrt());
             } else {
-                return Some(((uv.clone() - out_normal * dt) * ni_over_nt) - out_normal * -discrim.sqrt());
+                return Some(((uv.clone() - out_normal * dt) * ni_over_nt) - out_normal * (-discrim).sqrt());
             }
         }
     }
+
 }
 
 impl Dielectric {

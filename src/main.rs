@@ -111,7 +111,7 @@ fn get_old_spheres() -> HittableObjects{
     return HittableObjects{objects: vec![
         Hittable::Sphere(Sphere{center:Point{x:3.0, y:0.0, z:0.5}, radius:0.5, material:(Material::Lambertian(mat))}),
         Hittable::Sphere(Sphere{center:Point{x:0.0, y:-100.5, z:0.0}, radius:100.0, material:Material::Lambertian(Lambertian{albedo:Color{r:0.8, g:0.8, b:0.0}})}),
-        Hittable::Sphere(Sphere{center:Point{x:2.0, y:0.0, z:-0.5}, radius:0.5, material:Material::Metal(Metal{albedo:Color{r:0.8, g:0.6, b:0.2},fuzz:0.1})}),
+        Hittable::Sphere(Sphere{center:Point{x:2.0, y:0.0, z:-0.5}, radius:0.5, material:Material::Metal(Metal{albedo:Color{r:0.8, g:0.6, b:0.2},fuzz:1.0})}),
         Hittable::Sphere(Sphere{center:Point{x:1.0, y:0.0, z:1.0}, radius:0.5, material:Material::Dielectric(Dielectric{reflective_index:1.5})}),
         Hittable::Sphere(Sphere{center:Point{x:1.0, y:0.0, z:1.0}, radius:-0.45, material:Material::Dielectric(Dielectric{reflective_index:1.5})}),
     ]};
