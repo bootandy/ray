@@ -2,19 +2,12 @@ use data::old_vec3::Color;
 use data::old_vec3::Point;
 use data::ray::Ray;
 use data::sphere::HitRecord;
-use rand::random;
+use rand::{Rng, XorShiftRng};
 use std::boxed::Box;
 
 pub trait Material : Send + Sync {
-    fn scatter(&self, ray: &Ray, hr: HitRecord) -> Option<Ray>;
+    fn scatter(&self, rng: &mut XorShiftRng, ray: &Ray, hr: HitRecord) -> Option<Ray>;
     fn get_albedo(&self) -> &Color;
-    fn box_clone(&self) -> Box<dyn Material>;
-}
-
-impl Clone for Box<dyn Material> {
-    fn clone(&self) -> Box<dyn Material> {
-        self.box_clone()
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -33,20 +26,17 @@ pub struct Dielectric{
     pub reflective_index: f32,
 }
 
-fn random_in_sphere() -> Point {
-    let mut p = Point {
-        x: 1.0,
-        y: 1.0,
-        z: 1.0,
-    };
-    while p.squared_length() >= 1.0 {
-        p = Point {
-            x: random::<f32>() * 2.0 - 1.0,
-            y: random::<f32>() * 2.0 - 1.0,
-            z: random::<f32>() * 2.0 - 1.0,
+fn random_in_sphere(rng: &mut impl Rng) -> Point {
+    loop {
+        let p = Point {
+            x: rng.gen::<f32>() * 2.0 - 1.0,
+            y: rng.gen::<f32>() * 2.0 - 1.0,
+            z: rng.gen::<f32>() * 2.0 - 1.0,
         };
+        if p.squared_length() < 1.0 {
+            return p
+        }
     }
-    p
 }
 
 fn reflect(v: Point, n: &Point) -> Point {
@@ -54,8 +44,8 @@ fn reflect(v: Point, n: &Point) -> Point {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, _ray: &Ray, hr: HitRecord) -> Option<Ray> {
-        let target = hr.normal + random_in_sphere();
+    fn scatter(&self, rng: &mut XorShiftRng, _ray: &Ray, hr: HitRecord) -> Option<Ray> {
+        let target = hr.normal + random_in_sphere(rng);
         let scattered_ray = Ray {
             origin: hr.p,
             direction: target,
@@ -66,15 +56,12 @@ impl Material for Lambertian {
     fn get_albedo(&self) -> &Color {
         &self.albedo
     }
-    fn box_clone(&self) -> Box<dyn Material> {
-        Box::new((*self).clone())
-    }
 }
 
 
 impl Material for Metal {
-    fn scatter(&self, ray: &Ray, hr: HitRecord) -> Option<Ray> {
-        let reflected = reflect(ray.direction.clone().unit_vector(), &hr.normal) + (random_in_sphere() * self.fuzz);
+    fn scatter(&self, rng: &mut XorShiftRng, ray: &Ray, hr: HitRecord) -> Option<Ray> {
+        let reflected = reflect(ray.direction.clone().unit_vector(), &hr.normal) + (random_in_sphere(rng) * self.fuzz);
 
         match reflected.dot(&hr.normal) > 0.0 {
             true => Some(Ray {
@@ -88,9 +75,6 @@ impl Material for Metal {
     fn get_albedo(&self) -> &Color {
         &self.albedo
     }
-    fn box_clone(&self) -> Box<dyn Material> {
-        Box::new((*self).clone())
-    }
 }
 
 impl Dielectric {
@@ -100,12 +84,12 @@ impl Dielectric {
         return r0s + (1.0 - r0s) * (1.0 - cos).powi(5)
     }
 
-    fn refract(&self, uv: &Point, out_normal: Point, ni_over_nt: f32, cos: f32) -> Option<Point> {
+    fn refract(&self, rng:  &mut XorShiftRng, uv: &Point, out_normal: Point, ni_over_nt: f32, cos: f32) -> Option<Point> {
         let dt = uv.dot(&out_normal);
         let discrim = 1.0 - (ni_over_nt.powi(2) * (1.0 - dt.powi(2)));
 
         let reflect_prob = self.schlick(cos);
-        if reflect_prob > random::<f32>() {
+        if reflect_prob > rng.gen::<f32>() {
             return None
         }
         else if discrim > 0.0 {
@@ -118,8 +102,7 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(&self, ray: &Ray, hr: HitRecord) -> Option<Ray> {
-
+    fn scatter(&self, rng: &mut XorShiftRng, ray: &Ray, hr: HitRecord) -> Option<Ray> {
         let part_cos = ray.direction.dot(&hr.normal) / ray.direction.len();
         let (out_normal, ni_over_nt, cos) = {
             match ray.direction.dot(&hr.normal) > 0.0 {
@@ -133,7 +116,7 @@ impl Material for Dielectric {
         };
 
         let scattered_direction = {
-            match self.refract(&ray.direction.unit_vector(), out_normal, ni_over_nt, cos) {
+            match self.refract(rng, &ray.direction.unit_vector(), out_normal, ni_over_nt, cos) {
                 Some(point) => point,
                 None => reflect(ray.direction.clone(), &hr.normal)
             }
@@ -143,9 +126,6 @@ impl Material for Dielectric {
 
     fn get_albedo(&self) -> &Color {
         &Color{r:1.0, g:1.0, b:1.0}
-    }
-    fn box_clone(&self) -> Box<dyn Material> {
-        Box::new((*self).clone())
     }
 }
 

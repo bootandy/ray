@@ -3,13 +3,17 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::f32;
 use std::f32::consts::PI;
-use rand::random;
+use rand::{random, Rng};
 use rayon::prelude::*;
 
 use data::old_vec3::*;
 use data::sphere::*;
 use data::ray::Ray;
 use data::world::*;
+
+use rand::prng::XorShiftRng;
+use rand::FromEntropy;
+
 
 pub mod data;
 
@@ -27,14 +31,14 @@ const BLACK: Color = Color {
 };
 static UP:Point = Point{x:0.0, y: 1.0, z: 0.0};
 
-fn color(r: &Ray, spheres: &HittableObjects, depth: u8) -> Color {
+fn color(rng: &mut XorShiftRng, r: &Ray, spheres: &HittableObjects, depth: u8) -> Color {
     match spheres.hit_all(r){
         Some(hit) => {
             if depth < 50 {
                 let albedo = hit.material_hit.get_albedo();
-                let scattered = hit.material_hit.scatter(r, hit);
+                let scattered = hit.material_hit.scatter(rng, r, hit);
                 if let Some(scatter_ray) = scattered {
-                    let c = color(&scatter_ray, spheres, depth+1);
+                    let c = color(rng, &scatter_ray, spheres, depth+1);
                     return c.mul(albedo);
                 }
             }
@@ -49,11 +53,11 @@ fn color(r: &Ray, spheres: &HittableObjects, depth: u8) -> Color {
     }
 }
 
-fn random_in_unit_disk() -> Point {
+fn random_in_unit_disk(rng : &mut impl Rng) -> Point {
     loop {
         let p = Point {
-            x: random::<f32>() * 2.0 - 1.0,
-            y: random::<f32>() * 2.0 - 1.0,
+            x: rng.gen::<f32>() * 2.0 - 1.0,
+            y: rng.gen::<f32>() * 2.0 - 1.0,
             z: 0.0,
         };
         if p.dot(&p) < 1.0 {
@@ -73,8 +77,8 @@ struct Camera {
 }
 
 impl Camera {
-    fn get_ray(&self, s : f32, t: f32) -> Ray {
-        let rd = random_in_unit_disk() * self.lens_radius;
+    fn get_ray(&self, rng: &mut impl Rng, s : f32, t: f32) -> Ray {
+        let rd = random_in_unit_disk(rng) * self.lens_radius;
         let offset = self.u * rd.x + self.v *rd.y;
         let end = self.origin - offset;
         let d = self.lower_left.clone() + self.horizontal.clone()*s + self.vertical.clone()*t - end;
@@ -112,14 +116,16 @@ fn calc_pixel(data : (i32, i32, &Camera, &HittableObjects)) -> Color {
     let j = data.1;
     let cam = data.2;
     let spheres = data.3;
+    let mut rng = rand::prng::XorShiftRng::from_entropy();
+
     let mut col = Color{r:0.0, g:0.0, b:0.0};
 
     for _s in 0..NS {
-        let u = (i as f32 + random::<f32>()) / NX as f32;
-        let v = (j as f32 + random::<f32>()) / NY as f32;
+        let u = (i as f32 + rng.gen::<f32>()) / NX as f32;
+        let v = (j as f32 + rng.gen::<f32>()) / NY as f32;
 
-        let ray = cam.get_ray(u, v);
-        col += color(&ray, &spheres, 0);
+        let ray = cam.get_ray(&mut rng, u, v);
+        col += color(&mut rng, &ray, &spheres, 0);
     }
     col / NS as f32
 }
@@ -136,8 +142,8 @@ fn main() -> std::io::Result<()> {
 
 
     let cam = get_camera(
-        Point{x:0.0, y: 3.0, z: -10.0},
-        Point{x:0.0, y: 0.0, z: 7.0},
+        Point{x:0.0, y: 2.5, z: -10.0},
+        Point{x:0.0, y: 0.5, z: -5.0},
         UP,
         60.0,
         NX as f32 / NY as f32,
