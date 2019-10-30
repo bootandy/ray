@@ -7,7 +7,7 @@ pub struct HitRecord<'a> {
     pub t: f32,
     pub p: Point,
     pub normal: Point,
-    pub material_hit: &'a Material,
+    pub material_hit: &'a dyn Material,
 }
 fn is_closer_than(hr: &Option<HitRecord>, target: f32) -> bool {
     let biggest_seen = match hr {
@@ -33,7 +33,7 @@ impl Hittable {
 pub struct Sphere {
     pub center: Point,
     pub radius: f32,
-    pub material: Material,
+    pub material: Box<dyn Material>,
 }
 
 impl Sphere {
@@ -64,7 +64,7 @@ impl Sphere {
                     t,
                     p: ray.point_at_parameter(t),
                     normal: (ray.point_at_parameter(t) - self.center.clone()) / self.radius,
-                    material_hit: &self.material,
+                    material_hit: &*self.material,
                 }),
                 None => None,
             }

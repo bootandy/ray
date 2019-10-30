@@ -7,10 +7,9 @@ use rand::random;
 use rayon::prelude::*;
 
 use data::old_vec3::*;
-use data::material::*;
 use data::sphere::*;
 use data::ray::Ray;
-use std::sync::Arc;
+use data::world::*;
 
 pub mod data;
 
@@ -20,12 +19,15 @@ extern crate derive_more;
 extern crate rand;
 extern crate rayon;
 
-static mut counter: u64 = 0;
+
+const BLACK: Color = Color {
+    r: 0.0,
+    g: 0.0,
+    b: 0.0,
+};
+static UP:Point = Point{x:0.0, y: 1.0, z: 0.0};
 
 fn color(r: &Ray, spheres: &HittableObjects, depth: u8) -> Color {
-    unsafe {
-        counter += 1;
-    }
     match spheres.hit_all(r){
         Some(hit) => {
             if depth < 50 {
@@ -36,7 +38,7 @@ fn color(r: &Ray, spheres: &HittableObjects, depth: u8) -> Color {
                     return c.mul(albedo);
                 }
             }
-            return Color{r:0.0, g:0.0, b:0.0};
+            return BLACK
         },
         None => {
             let ud = r.direction.unit_vector();
@@ -49,9 +51,9 @@ fn color(r: &Ray, spheres: &HittableObjects, depth: u8) -> Color {
 
 fn random_in_unit_disk() -> Point {
     loop {
-        let p = Point{
-            x: random::<f32>()*2.0 - 1.0,
-            y: random::<f32>()*2.0 - 1.0,
+        let p = Point {
+            x: random::<f32>() * 2.0 - 1.0,
+            y: random::<f32>() * 2.0 - 1.0,
             z: 0.0,
         };
         if p.dot(&p) < 1.0 {
@@ -59,7 +61,6 @@ fn random_in_unit_disk() -> Point {
         }
     }
 }
-
 
 struct Camera {
     origin: Point,
@@ -95,83 +96,69 @@ fn get_camera(look_from : Point, look_at : Point, up: Point, vfov: f32, aspect :
     let horizontal = u * (2.0 * focus_dist * half_width);
     let vertical = v * (2.0 * focus_dist * half_height);
     Camera {
-        lower_left:lower_left,
-        horizontal:horizontal,
-        vertical:vertical,
+        lower_left,
+        horizontal,
+        vertical,
         origin:look_from,
-        lens_radius: lens_radius,
-        u: u,
-        v: v,
+        lens_radius,
+        u,
+        v,
     }
 }
 
-fn get_old_spheres() -> HittableObjects{
 
-    let mat = Lambertian{albedo:Color{r:0.1, g:0.2, b:0.5}};
-    return HittableObjects{objects: vec![
-        Hittable::Sphere(Sphere{center:Point{x:3.0, y:0.0, z:0.5}, radius:0.5, material:(Material::Lambertian(mat))}),
-        Hittable::Sphere(Sphere{center:Point{x:0.0, y:-100.5, z:0.0}, radius:100.0, material:Material::Lambertian(Lambertian{albedo:Color{r:0.8, g:0.8, b:0.0}})}),
-        Hittable::Sphere(Sphere{center:Point{x:2.0, y:0.0, z:-0.5}, radius:0.5, material:Material::Metal(Metal{albedo:Color{r:0.8, g:0.6, b:0.2},fuzz:1.0})}),
-        Hittable::Sphere(Sphere{center:Point{x:1.0, y:0.0, z:1.0}, radius:0.5, material:Material::Dielectric(Dielectric{reflective_index:1.5})}),
-        Hittable::Sphere(Sphere{center:Point{x:1.0, y:0.0, z:1.0}, radius:-0.45, material:Material::Dielectric(Dielectric{reflective_index:1.5})}),
-    ]};
-}
-
-
-fn calc_pixel(data : &(i32, i32, &Camera, &HittableObjects)) -> Color {
+fn calc_pixel(data : (i32, i32, &Camera, &HittableObjects)) -> Color {
     let i = data.0;
     let j = data.1;
     let cam = data.2;
     let spheres = data.3;
     let mut col = Color{r:0.0, g:0.0, b:0.0};
 
-    for _s in 0..ns {
-        let u = (i as f32 + random::<f32>()) / nx as f32;
-        let v = (j as f32 + random::<f32>()) / ny as f32;
+    for _s in 0..NS {
+        let u = (i as f32 + random::<f32>()) / NX as f32;
+        let v = (j as f32 + random::<f32>()) / NY as f32;
 
         let ray = cam.get_ray(u, v);
         col += color(&ray, &spheres, 0);
     }
-    col / ns as f32
+    col / NS as f32
 }
 
-const nx : i32 = 200;
-const ny : i32 = 100;
-const ns : i32 = 100;
+const NX: i32 = 800;
+const NY: i32 = 400;
+const NS : i32 = 100;
+
 
 fn main() -> std::io::Result<()> {
     println!("Hello, world!");
     let mut buffer = File::create("out.ppm")?;
-    buffer.write(format!("P3\n{} {}\n255\n", nx, ny).as_bytes())?;
+    buffer.write(format!("P3\n{} {}\n255\n", NX, NY).as_bytes())?;
+
 
     let cam = get_camera(
-        Point{x:13.0, y: 2.0, z: 3.0},
-        Point{x:0.0, y: 0.5, z: 0.0},
-        Point{x:0.0, y: 1.0, z: 0.0},
-        10.0,
-        nx as f32 / ny as f32,
+        Point{x:0.0, y: 3.0, z: -10.0},
+        Point{x:0.0, y: 0.0, z: 7.0},
+        UP,
+        60.0,
+        NX as f32 / NY as f32,
         0.01,
     );
-    //let spheres = get_spheres_many();
-    let spheres = get_old_spheres();
+    //let spheres = build_world();
+    let spheres = build_many();
 
     let mut to_calc = vec![];
 
-    for j in (0..ny-1).rev() {
-        for i in 0..nx {
+    for j in (0..NY -1).rev() {
+        for i in 0..NX {
             to_calc.push((i, j, &cam, &spheres));
         }
     }
-    let pixels : Vec<Color> = to_calc.par_iter().map(calc_pixel).collect();
-    // sort pixels
+    let pixels : Vec<Color> = to_calc.into_par_iter().map(calc_pixel).collect();
     for row in pixels {
         buffer.write(row.as_color_str().as_bytes())?;
     }
     buffer.flush()?;
 
-    unsafe {
-        println!("{:?}", counter);
-    }
     Ok(())
 }
 
