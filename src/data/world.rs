@@ -153,6 +153,9 @@ pub fn build_many() -> HittableObjects {
     let s = Sphere {center: Point{x:-6.0, y: 2.0, z:-3.0}, radius: 2.0, material};
     objects.push(Hittable::Sphere(s));
 
+    let material = Box::new(Metal{ albedo: Color{r:0.9, g:0.9, b:0.9}, fuzz:0.0});
+    let forward_center_glass = Sphere {center: Point{x:3.0, y: 1.4, z:-5.0}, radius: 1.4, material};
+    objects.push(Hittable::Sphere(forward_center_glass));
 
     HittableObjects { objects }
 }

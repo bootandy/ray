@@ -104,14 +104,12 @@ impl Dielectric {
 impl Material for Dielectric {
     fn scatter(&self, rng: &mut XorShiftRng, ray: &Ray, hr: HitRecord) -> Option<Ray> {
         let part_cos = ray.direction.dot(&hr.normal) / ray.direction.len();
+
         let (out_normal, ni_over_nt, cos) = {
-            match ray.direction.dot(&hr.normal) > 0.0 {
-                true => {
-                    (hr.normal*-1.0, self.reflective_index, part_cos * self.reflective_index)
-                },
-                false => {
-                    (hr.normal, 1.0 / self.reflective_index, -1.0 * part_cos)
-                }
+            if ray.direction.dot(&hr.normal) > 0.0 {
+                (hr.normal * -1.0, self.reflective_index, part_cos * self.reflective_index)
+            } else {
+                (hr.normal, 1.0 / self.reflective_index, -1.0 * part_cos)
             }
         };
 

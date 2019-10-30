@@ -130,16 +130,26 @@ fn calc_pixel(data : (i32, i32, &Camera, &HittableObjects)) -> Color {
     col / NS as f32
 }
 
-const NX: i32 = 800;
-const NY: i32 = 400;
+const NX: i32 = 200;
+const NY: i32 = 100;
 const NS : i32 = 100;
 
 
 fn main() -> std::io::Result<()> {
-    println!("Hello, world!");
+    println!("Rendering! x: {} y: {} {} times", NX, NY, NS);
     let mut buffer = File::create("out.ppm")?;
     buffer.write(format!("P3\n{} {}\n255\n", NX, NY).as_bytes())?;
 
+
+//    let cam = get_camera(
+//        Point{x:13.0, y: 2.0, z: 1.0},
+//        Point{x:0.0, y: 0.5, z: 0.0},
+//        UP,
+//        10.0,
+//        NX as f32 / NY as f32,
+//        0.00001,
+//    );
+//    let spheres = build_world();
 
     let cam = get_camera(
         Point{x:0.0, y: 2.5, z: -10.0},
@@ -149,7 +159,6 @@ fn main() -> std::io::Result<()> {
         NX as f32 / NY as f32,
         0.01,
     );
-    //let spheres = build_world();
     let spheres = build_many();
 
     let mut to_calc = vec![];
