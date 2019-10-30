@@ -12,11 +12,10 @@ pub struct HitRecord<'a> {
 fn is_closer_than(hr: &Option<HitRecord>, target: f32) -> bool {
     let biggest_seen = match hr {
         None => MAX,
-        Some(thing) => thing.t
+        Some(thing) => thing.t,
     };
     target < biggest_seen && target > 0.001
 }
-
 
 pub enum Hittable {
     Sphere(Sphere),
@@ -87,7 +86,8 @@ pub struct MovingSphere {
 
 impl MovingSphere {
     fn center(&self, time: f32) -> Point {
-         self.center0 +  (self.center1 - self.center0)* ((time - self.time0)/(self.time1 - self.time0))
+        self.center0
+            + (self.center1 - self.center0) * ((time - self.time0) / (self.time1 - self.time0))
     }
     fn hit(&self, ray: &Ray, closest_found: &Option<HitRecord>) -> Option<HitRecord> {
         let oc = ray.origin.clone() - self.center(ray.time);

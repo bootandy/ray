@@ -1,4 +1,3 @@
-
 #[derive(Debug, Clone, Copy, From, Add, AddAssign, Sub, Mul, Div)]
 pub struct Point {
     pub x: f32,
