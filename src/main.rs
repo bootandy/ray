@@ -74,19 +74,23 @@ struct Camera {
     u: Point,
     v: Point,
     lens_radius: f32,
+    time0: f32,
+    time1: f32,
 }
 
 impl Camera {
     fn get_ray(&self, rng: &mut impl Rng, s : f32, t: f32) -> Ray {
         let rd = random_in_unit_disk(rng) * self.lens_radius;
         let offset = self.u * rd.x + self.v *rd.y;
+        let time = self.time0 + rng.gen::<f32>() * (self.time1 - self.time0);
         let end = self.origin - offset;
         let d = self.lower_left.clone() + self.horizontal.clone()*s + self.vertical.clone()*t - end;
-        Ray{origin:self.origin.clone()+ offset , direction:d}
+        Ray{origin:self.origin.clone()+ offset , direction:d, time}
     }
 }
 
-fn get_camera(look_from : Point, look_at : Point, up: Point, vfov: f32, aspect : f32, aperture: f32) -> Camera {
+fn get_camera(look_from : Point, look_at : Point, up: Point, vfov: f32, aspect : f32, aperture: f32, time0: f32, time1: f32) -> Camera {
+
     let focus_dist = (look_from - look_at).len();
     let lens_radius = aperture / 2.0;
     let theta = vfov * PI / 180.0;
@@ -95,6 +99,7 @@ fn get_camera(look_from : Point, look_at : Point, up: Point, vfov: f32, aspect :
     let w = (look_from - look_at).unit_vector();
     let u = (up.cross(&w)).unit_vector();
     let v = w.cross(&u);
+    assert!(time0 < time1);
 
     let lower_left = look_from - (u * half_width*focus_dist) - (v * half_height*focus_dist) - w*focus_dist;
     let horizontal = u * (2.0 * focus_dist * half_width);
@@ -107,6 +112,8 @@ fn get_camera(look_from : Point, look_at : Point, up: Point, vfov: f32, aspect :
         lens_radius,
         u,
         v,
+        time0,
+        time1,
     }
 }
 
@@ -130,9 +137,9 @@ fn calc_pixel(data : (i32, i32, &Camera, &HittableObjects)) -> Color {
     col / NS as f32
 }
 
-const NX: i32 = 200;
-const NY: i32 = 100;
-const NS : i32 = 100;
+const NX: i32 = 800;
+const NY: i32 = 400;
+const NS : i32 = 50;
 
 
 fn main() -> std::io::Result<()> {
@@ -158,6 +165,8 @@ fn main() -> std::io::Result<()> {
         60.0,
         NX as f32 / NY as f32,
         0.01,
+        0.0,
+        1.0,
     );
     let spheres = build_many();
 

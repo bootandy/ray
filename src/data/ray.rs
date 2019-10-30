@@ -4,6 +4,7 @@ use data::old_vec3::Point;
 pub struct Ray {
     pub origin: Point,
     pub direction: Point,
+    pub time: f32,
 }
 
 impl Ray {

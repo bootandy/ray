@@ -44,11 +44,12 @@ fn reflect(v: Point, n: &Point) -> Point {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, rng: &mut XorShiftRng, _ray: &Ray, hr: HitRecord) -> Option<Ray> {
+    fn scatter(&self, rng: &mut XorShiftRng, ray: &Ray, hr: HitRecord) -> Option<Ray> {
         let target = hr.normal + random_in_sphere(rng);
         let scattered_ray = Ray {
             origin: hr.p,
             direction: target,
+            time: ray.time
         };
         Some(scattered_ray)
     }
@@ -67,6 +68,7 @@ impl Material for Metal {
             true => Some(Ray {
                 origin: hr.p,
                 direction: reflected,
+                time: ray.time
             }),
             false => None,
         }
@@ -119,7 +121,7 @@ impl Material for Dielectric {
                 None => reflect(ray.direction.clone(), &hr.normal)
             }
         };
-        Some(Ray{origin: hr.p, direction: scattered_direction})
+        Some(Ray{origin: hr.p, direction: scattered_direction, time:ray.time})
     }
 
     fn get_albedo(&self) -> &Color {

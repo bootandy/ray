@@ -3,7 +3,7 @@ use data::material::Metal;
 use data::material::Dielectric;
 use data::old_vec3::Color;
 use data::old_vec3::Point;
-use data::sphere::Sphere;
+use data::sphere::{Sphere, MovingSphere};
 use data::sphere::{Hittable, HittableObjects};
 use std::boxed::Box;
 use rand::random;
@@ -137,8 +137,13 @@ pub fn build_many() -> HittableObjects {
                 z: 40.0 *random::<f32>() - 10.0,
             };
             let material = rnd_material();
-            let s = Sphere {center, radius: how_high, material};
-            objects.push(Hittable::Sphere(s));
+
+                if random::<f32>() < 0.5 {
+                    objects.push(Hittable::Sphere(Sphere { center, radius: how_high, material }));
+                } else {
+                    let center1 = center + Point{x:0.0, y: random::<f32>(), z:0.0};
+                    objects.push(Hittable::MovingSphere(MovingSphere{center0:center, center1, radius: how_high, material, time0:0.0, time1:1.0}));
+                }
         }
     }
     let material = Box::new(Lambertian{ albedo: Color{r:0.4, g:0.2, b:0.1} });
@@ -153,9 +158,9 @@ pub fn build_many() -> HittableObjects {
     let s = Sphere {center: Point{x:-6.0, y: 2.0, z:-3.0}, radius: 2.0, material};
     objects.push(Hittable::Sphere(s));
 
-    let material = Box::new(Metal{ albedo: Color{r:0.9, g:0.9, b:0.9}, fuzz:0.0});
-    let forward_center_glass = Sphere {center: Point{x:3.0, y: 1.4, z:-5.0}, radius: 1.4, material};
-    objects.push(Hittable::Sphere(forward_center_glass));
+//    let material = Box::new(Metal{ albedo: Color{r:0.9, g:0.9, b:0.9}, fuzz:0.0});
+//    let forward_center_glass = Sphere {center: Point{x:3.0, y: 1.4, z:-5.0}, radius: 1.4, material};
+//    objects.push(Hittable::Sphere(forward_center_glass));
 
     HittableObjects { objects }
 }
