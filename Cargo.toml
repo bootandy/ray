@@ -9,5 +9,5 @@ rand = "0.5.5"
 rayon = "1.0"
 itertools = "0.7"
 lazy_static = "1"
-image = "0.20"
+image = "0.23"
 
